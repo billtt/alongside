@@ -1,0 +1,1336 @@
+{
+  "name": "达达",
+  "clips": {
+    "side": [
+      {
+        "file": "side-0.png",
+        "unitsPerPixel": 0.002857142857142857,
+        "anchorX": 200.0
+      },
+      {
+        "file": "side-1.png",
+        "unitsPerPixel": 0.002857142857142857,
+        "anchorX": 199.0
+      },
+      {
+        "file": "side-2.png",
+        "unitsPerPixel": 0.002857142857142857,
+        "anchorX": 198.5
+      }
+    ],
+    "back": [
+      {
+        "file": "back-0.png",
+        "unitsPerPixel": 0.0022727272727272726,
+        "anchorX": 197.5
+      },
+      {
+        "file": "back-1.png",
+        "unitsPerPixel": 0.0022727272727272726,
+        "anchorX": 198.5
+      },
+      {
+        "file": "back-2.png",
+        "unitsPerPixel": 0.0022727272727272726,
+        "anchorX": 199.0
+      }
+    ],
+    "loaf": [
+      {
+        "file": "loaf-0.png",
+        "unitsPerPixel": 0.002077295,
+        "anchorX": 190.0
+      },
+      {
+        "file": "loaf-1.png",
+        "unitsPerPixel": 0.002077295,
+        "anchorX": 190.0
+      },
+      {
+        "file": "loaf-2.png",
+        "unitsPerPixel": 0.002077295,
+        "anchorX": 190.5
+      }
+    ],
+    "paw": [
+      {
+        "file": "paw-0.png",
+        "unitsPerPixel": 0.002631578947368421,
+        "anchorX": 175.0
+      },
+      {
+        "file": "paw-1.png",
+        "unitsPerPixel": 0.002631578947368421,
+        "anchorX": 268.0,
+        "contact": [
+          16,
+          199
+        ]
+      },
+      {
+        "file": "paw-2.png",
+        "unitsPerPixel": 0.002631578947368421,
+        "anchorX": 181.0
+      }
+    ],
+    "swat": [
+      {
+        "file": "swat-0.png",
+        "unitsPerPixel": 0.002631578947368421,
+        "anchorX": 147.0
+      },
+      {
+        "file": "swat-1.png",
+        "unitsPerPixel": 0.002631578947368421,
+        "anchorX": 273.0,
+        "contact": [
+          23,
+          114
+        ]
+      },
+      {
+        "file": "swat-2.png",
+        "unitsPerPixel": 0.002631578947368421,
+        "anchorX": 145.0
+      }
+    ],
+    "nip": [
+      {
+        "file": "nip-0.png",
+        "unitsPerPixel": 0.002631578947368421,
+        "anchorX": 269.0
+      },
+      {
+        "file": "nip-1.png",
+        "unitsPerPixel": 0.002631578947368421,
+        "anchorX": 273.0,
+        "contact": [
+          59,
+          118
+        ]
+      },
+      {
+        "file": "nip-2.png",
+        "unitsPerPixel": 0.002631578947368421,
+        "anchorX": 236.0
+      }
+    ],
+    "walk": [
+      {
+        "file": "walk-0.png",
+        "unitsPerPixel": 0.0023584905660377358,
+        "anchorX": 278.0
+      },
+      {
+        "file": "walk-1.png",
+        "unitsPerPixel": 0.0023584905660377358,
+        "anchorX": 275.0
+      },
+      {
+        "file": "walk-2.png",
+        "unitsPerPixel": 0.0023584905660377358,
+        "anchorX": 277.0
+      },
+      {
+        "file": "walk-3.png",
+        "unitsPerPixel": 0.0023584905660377358,
+        "anchorX": 276.0
+      },
+      {
+        "file": "walk-4.png",
+        "unitsPerPixel": 0.0023584905660377358,
+        "anchorX": 277.5
+      },
+      {
+        "file": "walk-5.png",
+        "unitsPerPixel": 0.0023584905660377358,
+        "anchorX": 278.0
+      }
+    ],
+    "leap": [
+      {
+        "file": "leap-0.png",
+        "unitsPerPixel": 0.0026666666666666666,
+        "anchorX": 210.5
+      },
+      {
+        "file": "leap-1.png",
+        "unitsPerPixel": 0.0026666666666666666,
+        "anchorX": 255.5
+      },
+      {
+        "file": "leap-2.png",
+        "unitsPerPixel": 0.0026666666666666666,
+        "anchorX": 224.5
+      }
+    ],
+    "carry": [
+      {
+        "file": "carry-0.png",
+        "unitsPerPixel": 0.002564102564102564,
+        "anchorX": 98.5,
+        "gripFromTop": 6
+      },
+      {
+        "file": "carry-1.png",
+        "unitsPerPixel": 0.002564102564102564,
+        "anchorX": 112.5,
+        "gripFromTop": 6
+      },
+      {
+        "file": "carry-2.png",
+        "unitsPerPixel": 0.002564102564102564,
+        "anchorX": 125.0,
+        "gripFromTop": 6
+      }
+    ],
+    "settle": [
+      {
+        "file": "settle-0.png",
+        "unitsPerPixel": 0.0026954177897574125,
+        "anchorX": 108.0
+      },
+      {
+        "file": "settle-1.png",
+        "unitsPerPixel": 0.0026954177897574125,
+        "anchorX": 114.0
+      },
+      {
+        "file": "settle-2.png",
+        "unitsPerPixel": 0.0026954177897574125,
+        "anchorX": 135.0
+      },
+      {
+        "file": "settle-3.png",
+        "unitsPerPixel": 0.0026954177897574125,
+        "anchorX": 147.0
+      },
+      {
+        "file": "settle-4.png",
+        "unitsPerPixel": 0.0026954177897574125,
+        "anchorX": 173.0
+      },
+      {
+        "file": "settle-5.png",
+        "unitsPerPixel": 0.0026954177897574125,
+        "anchorX": 177.0
+      },
+      {
+        "file": "settle-6.png",
+        "unitsPerPixel": 0.0026954177897574125,
+        "anchorX": 183.0
+      },
+      {
+        "file": "settle-7.png",
+        "unitsPerPixel": 0.0026954177897574125,
+        "anchorX": 196.0
+      },
+      {
+        "file": "settle-8.png",
+        "unitsPerPixel": 0.0026954177897574125,
+        "anchorX": 200.0
+      }
+    ],
+    "turn": [
+      {
+        "file": "turn-0.png",
+        "unitsPerPixel": 0.0017241379310344827,
+        "anchorX": 278.5
+      },
+      {
+        "file": "turn-1.png",
+        "unitsPerPixel": 0.0017241379310344827,
+        "anchorX": 296.5
+      },
+      {
+        "file": "turn-2.png",
+        "unitsPerPixel": 0.0017241379310344827,
+        "anchorX": 308.0
+      },
+      {
+        "file": "turn-3.png",
+        "unitsPerPixel": 0.0017241379310344827,
+        "anchorX": 289.0
+      },
+      {
+        "file": "turn-4.png",
+        "unitsPerPixel": 0.0017241379310344827,
+        "anchorX": 274.5
+      },
+      {
+        "file": "turn-5.png",
+        "unitsPerPixel": 0.0017241379310344827,
+        "anchorX": 258.5
+      }
+    ],
+    "pawAim": [
+      {
+        "file": "paw-aim-0.png",
+        "unitsPerPixel": 0.002577319587628866,
+        "anchorX": 129,
+        "contact": [
+          113,
+          351
+        ]
+      },
+      {
+        "file": "paw-aim-1.png",
+        "unitsPerPixel": 0.002577319587628866,
+        "anchorX": 139,
+        "contact": [
+          92,
+          236
+        ]
+      },
+      {
+        "file": "paw-aim-2.png",
+        "unitsPerPixel": 0.002577319587628866,
+        "anchorX": 149,
+        "contact": [
+          92,
+          138
+        ]
+      }
+    ],
+    "swatAim": [
+      {
+        "file": "swat-aim-0.png",
+        "unitsPerPixel": 0.002577319587628866,
+        "anchorX": 139,
+        "contact": [
+          114,
+          315
+        ]
+      },
+      {
+        "file": "swat-aim-1.png",
+        "unitsPerPixel": 0.002577319587628866,
+        "anchorX": 152,
+        "contact": [
+          105,
+          199
+        ]
+      },
+      {
+        "file": "swat-aim-2.png",
+        "unitsPerPixel": 0.002577319587628866,
+        "anchorX": 141,
+        "contact": [
+          213,
+          34
+        ]
+      }
+    ],
+    "nipAim": [
+      {
+        "file": "nip-aim-0.png",
+        "unitsPerPixel": 0.002577319587628866,
+        "anchorX": 147,
+        "contact": [
+          137,
+          277
+        ]
+      },
+      {
+        "file": "nip-aim-1.png",
+        "unitsPerPixel": 0.002577319587628866,
+        "anchorX": 166,
+        "contact": [
+          159,
+          122
+        ]
+      },
+      {
+        "file": "nip-aim-2.png",
+        "unitsPerPixel": 0.002577319587628866,
+        "anchorX": 147,
+        "contact": [
+          142,
+          72
+        ]
+      }
+    ],
+    "pawRest": [
+      {
+        "file": "paw-rest-reach.png",
+        "unitsPerPixel": 0.001949317738791423,
+        "anchorX": 273.36,
+        "contact": [
+          228,
+          245
+        ]
+      },
+      {
+        "file": "Motion/paw-flank-3.png",
+        "unitsPerPixel": 0.002811489,
+        "anchorX": 181.06,
+        "contact": [
+          198,
+          133
+        ]
+      }
+    ],
+    "swatRest": [
+      {
+        "file": "swat-rest-reach.png",
+        "unitsPerPixel": 0.001949317738791423,
+        "anchorX": 278.72,
+        "contact": [
+          242,
+          256
+        ]
+      },
+      {
+        "file": "Motion/swat-flank-3.png",
+        "unitsPerPixel": 0.002814078,
+        "anchorX": 181.211,
+        "contact": [
+          206,
+          140
+        ]
+      }
+    ],
+    "nipRest": [
+      {
+        "file": "nip-rest-reach.png",
+        "unitsPerPixel": 0.001949317738791423,
+        "anchorX": 277.648,
+        "contact": [
+          137,
+          232
+        ]
+      },
+      {
+        "file": "Motion/nip-flank-3.png",
+        "unitsPerPixel": 0.002816697,
+        "anchorX": 181.363,
+        "contact": [
+          168,
+          146
+        ]
+      }
+    ],
+    "motion-paw-low": [
+      {
+        "file": "Motion/paw-low-0.png",
+        "unitsPerPixel": 0.003149455,
+        "anchorX": 92.852
+      },
+      {
+        "file": "Motion/paw-low-1.png",
+        "unitsPerPixel": 0.003163193,
+        "anchorX": 94.215
+      },
+      {
+        "file": "Motion/paw-low-2.png",
+        "unitsPerPixel": 0.003164588,
+        "anchorX": 100.021
+      },
+      {
+        "file": "Motion/paw-low-3.png",
+        "unitsPerPixel": 0.003128613,
+        "anchorX": 104.509
+      }
+    ],
+    "motion-swat-low": [
+      {
+        "file": "Motion/swat-low-0.png",
+        "unitsPerPixel": 0.003132959,
+        "anchorX": 93.538
+      },
+      {
+        "file": "Motion/swat-low-1.png",
+        "unitsPerPixel": 0.003116325,
+        "anchorX": 97.905
+      },
+      {
+        "file": "Motion/swat-low-2.png",
+        "unitsPerPixel": 0.003110956,
+        "anchorX": 104.377
+      },
+      {
+        "file": "Motion/swat-low-3.png",
+        "unitsPerPixel": 0.003069021,
+        "anchorX": 111.228
+      }
+    ],
+    "motion-nip-low": [
+      {
+        "file": "Motion/nip-low-0.png",
+        "unitsPerPixel": 0.003104852,
+        "anchorX": 94.805
+      },
+      {
+        "file": "Motion/nip-low-1.png",
+        "unitsPerPixel": 0.003127525,
+        "anchorX": 97.839
+      },
+      {
+        "file": "Motion/nip-low-2.png",
+        "unitsPerPixel": 0.003069642,
+        "anchorX": 108.237
+      },
+      {
+        "file": "Motion/nip-low-3.png",
+        "unitsPerPixel": 0.002950263,
+        "anchorX": 123.941
+      }
+    ],
+    "motion-paw-mid": [
+      {
+        "file": "Motion/paw-mid-0.png",
+        "unitsPerPixel": 0.003197761,
+        "anchorX": 92.236
+      },
+      {
+        "file": "Motion/paw-mid-1.png",
+        "unitsPerPixel": 0.003172701,
+        "anchorX": 98.325
+      },
+      {
+        "file": "Motion/paw-mid-2.png",
+        "unitsPerPixel": 0.003121989,
+        "anchorX": 107.77
+      },
+      {
+        "file": "Motion/paw-mid-3.png",
+        "unitsPerPixel": 0.003123084,
+        "anchorX": 112.93
+      }
+    ],
+    "motion-swat-mid": [
+      {
+        "file": "Motion/swat-mid-0.png",
+        "unitsPerPixel": 0.003207773,
+        "anchorX": 92.749
+      },
+      {
+        "file": "Motion/swat-mid-1.png",
+        "unitsPerPixel": 0.003193561,
+        "anchorX": 100.489
+      },
+      {
+        "file": "Motion/swat-mid-2.png",
+        "unitsPerPixel": 0.003150815,
+        "anchorX": 113.511
+      },
+      {
+        "file": "Motion/swat-mid-3.png",
+        "unitsPerPixel": 0.003168599,
+        "anchorX": 120.475
+      }
+    ],
+    "motion-nip-mid": [
+      {
+        "file": "Motion/nip-mid-0.png",
+        "unitsPerPixel": 0.003213077,
+        "anchorX": 92.37
+      },
+      {
+        "file": "Motion/nip-mid-1.png",
+        "unitsPerPixel": 0.003132338,
+        "anchorX": 106.381
+      },
+      {
+        "file": "Motion/nip-mid-2.png",
+        "unitsPerPixel": 0.003107417,
+        "anchorX": 121.924
+      },
+      {
+        "file": "Motion/nip-mid-3.png",
+        "unitsPerPixel": 0.003066721,
+        "anchorX": 137.044
+      }
+    ],
+    "motion-paw-high": [
+      {
+        "file": "Motion/paw-high-0.png",
+        "unitsPerPixel": 0.003234703,
+        "anchorX": 92.196
+      },
+      {
+        "file": "Motion/paw-high-1.png",
+        "unitsPerPixel": 0.003193782,
+        "anchorX": 100.531
+      },
+      {
+        "file": "Motion/paw-high-2.png",
+        "unitsPerPixel": 0.003201274,
+        "anchorX": 108.661
+      },
+      {
+        "file": "Motion/paw-high-3.png",
+        "unitsPerPixel": 0.003192948,
+        "anchorX": 116.38
+      }
+    ],
+    "motion-swat-high": [
+      {
+        "file": "Motion/swat-high-0.png",
+        "unitsPerPixel": 0.003233783,
+        "anchorX": 91.965
+      },
+      {
+        "file": "Motion/swat-high-1.png",
+        "unitsPerPixel": 0.003197247,
+        "anchorX": 97.905
+      },
+      {
+        "file": "Motion/swat-high-2.png",
+        "unitsPerPixel": 0.00315531,
+        "anchorX": 105.228
+      },
+      {
+        "file": "Motion/swat-high-3.png",
+        "unitsPerPixel": 0.003138899,
+        "anchorX": 112.071
+      }
+    ],
+    "motion-nip-high": [
+      {
+        "file": "Motion/nip-high-0.png",
+        "unitsPerPixel": 0.00322949,
+        "anchorX": 92.031
+      },
+      {
+        "file": "Motion/nip-high-1.png",
+        "unitsPerPixel": 0.003200834,
+        "anchorX": 101.089
+      },
+      {
+        "file": "Motion/nip-high-2.png",
+        "unitsPerPixel": 0.003188972,
+        "anchorX": 109.699
+      },
+      {
+        "file": "Motion/nip-high-3.png",
+        "unitsPerPixel": 0.00314895,
+        "anchorX": 119.475
+      }
+    ],
+    "motion-paw-side": [
+      {
+        "file": "Motion/paw-side-0.png",
+        "unitsPerPixel": 0.003280696,
+        "anchorX": 93.084
+      },
+      {
+        "file": "Motion/paw-side-1.png",
+        "unitsPerPixel": 0.003308802,
+        "anchorX": 106.846
+      },
+      {
+        "file": "Motion/paw-side-2.png",
+        "unitsPerPixel": 0.00325507,
+        "anchorX": 152.123
+      },
+      {
+        "file": "Motion/paw-side-3.png",
+        "unitsPerPixel": 0.003215968,
+        "anchorX": 195.792
+      }
+    ],
+    "motion-swat-side": [
+      {
+        "file": "Motion/swat-side-0.png",
+        "unitsPerPixel": 0.003280006,
+        "anchorX": 90.974
+      },
+      {
+        "file": "Motion/swat-side-1.png",
+        "unitsPerPixel": 0.003293449,
+        "anchorX": 94.975
+      },
+      {
+        "file": "Motion/swat-side-2.png",
+        "unitsPerPixel": 0.003197204,
+        "anchorX": 144.327
+      },
+      {
+        "file": "Motion/swat-side-3.png",
+        "unitsPerPixel": 0.003157698,
+        "anchorX": 173.011
+      }
+    ],
+    "motion-nip-side": [
+      {
+        "file": "Motion/nip-side-0.png",
+        "unitsPerPixel": 0.003267025,
+        "anchorX": 93.503
+      },
+      {
+        "file": "Motion/nip-side-1.png",
+        "unitsPerPixel": 0.003255149,
+        "anchorX": 113.734
+      },
+      {
+        "file": "Motion/nip-side-2.png",
+        "unitsPerPixel": 0.0031424,
+        "anchorX": 156.932
+      },
+      {
+        "file": "Motion/nip-side-3.png",
+        "unitsPerPixel": 0.003033479,
+        "anchorX": 188.342
+      }
+    ],
+    "motion-paw-rest": [
+      {
+        "file": "Motion/paw-rest-0.png",
+        "unitsPerPixel": 0.002691937,
+        "anchorX": 207.925
+      },
+      {
+        "file": "Motion/paw-rest-1.png",
+        "unitsPerPixel": 0.002689055,
+        "anchorX": 208.188
+      },
+      {
+        "file": "Motion/paw-rest-2.png",
+        "unitsPerPixel": 0.002673331,
+        "anchorX": 207.791
+      },
+      {
+        "file": "Motion/paw-rest-3.png",
+        "unitsPerPixel": 0.002648243,
+        "anchorX": 205.662
+      }
+    ],
+    "motion-swat-rest": [
+      {
+        "file": "Motion/swat-rest-0.png",
+        "unitsPerPixel": 0.002700336,
+        "anchorX": 208.196
+      },
+      {
+        "file": "Motion/swat-rest-1.png",
+        "unitsPerPixel": 0.002709967,
+        "anchorX": 208.454
+      },
+      {
+        "file": "Motion/swat-rest-2.png",
+        "unitsPerPixel": 0.002715704,
+        "anchorX": 208.329
+      },
+      {
+        "file": "Motion/swat-rest-3.png",
+        "unitsPerPixel": 0.002707859,
+        "anchorX": 208.428
+      }
+    ],
+    "motion-nip-rest": [
+      {
+        "file": "Motion/nip-rest-0.png",
+        "unitsPerPixel": 0.00269243,
+        "anchorX": 207.742
+      },
+      {
+        "file": "Motion/nip-rest-1.png",
+        "unitsPerPixel": 0.002699683,
+        "anchorX": 208.011
+      },
+      {
+        "file": "Motion/nip-rest-2.png",
+        "unitsPerPixel": 0.002712103,
+        "anchorX": 210.533
+      },
+      {
+        "file": "Motion/nip-rest-3.png",
+        "unitsPerPixel": 0.002726998,
+        "anchorX": 210.256
+      }
+    ],
+    "motion-side-prone": [
+      {
+        "file": "Motion/side-prone-0.png",
+        "unitsPerPixel": 0.003465838,
+        "anchorX": 165.552
+      },
+      {
+        "file": "Motion/side-prone-1.png",
+        "unitsPerPixel": 0.00351897,
+        "anchorX": 176.174
+      },
+      {
+        "file": "Motion/side-prone-2.png",
+        "unitsPerPixel": 0.003494311,
+        "anchorX": 173.023
+      },
+      {
+        "file": "Motion/side-prone-3.png",
+        "unitsPerPixel": 0.003465349,
+        "anchorX": 166.01
+      }
+    ],
+    "motion-loaf-prone": [
+      {
+        "file": "Motion/loaf-prone-0.png",
+        "unitsPerPixel": 0.003094995,
+        "anchorX": 133.382
+      },
+      {
+        "file": "Motion/loaf-prone-1.png",
+        "unitsPerPixel": 0.003114829,
+        "anchorX": 142.342
+      },
+      {
+        "file": "Motion/loaf-prone-2.png",
+        "unitsPerPixel": 0.003284717,
+        "anchorX": 164.823
+      },
+      {
+        "file": "Motion/loaf-prone-3.png",
+        "unitsPerPixel": 0.003244361,
+        "anchorX": 176.181
+      }
+    ],
+    "motion-walk-sit": [
+      {
+        "file": "Motion/walk-sit-0.png",
+        "unitsPerPixel": 0.003511612,
+        "anchorX": 181.602
+      },
+      {
+        "file": "Motion/walk-sit-1.png",
+        "unitsPerPixel": 0.003640756,
+        "anchorX": 167.554
+      },
+      {
+        "file": "Motion/walk-sit-2.png",
+        "unitsPerPixel": 0.003816638,
+        "anchorX": 134.458
+      },
+      {
+        "file": "Motion/walk-sit-3.png",
+        "unitsPerPixel": 0.004393298,
+        "anchorX": 73.411
+      }
+    ],
+    "motion-back-wake": [
+      {
+        "file": "Motion/back-wake-0.png",
+        "unitsPerPixel": 0.003416774,
+        "anchorX": 132.404
+      },
+      {
+        "file": "Motion/back-wake-1.png",
+        "unitsPerPixel": 0.003412655,
+        "anchorX": 135.784
+      },
+      {
+        "file": "Motion/back-wake-2.png",
+        "unitsPerPixel": 0.003490329,
+        "anchorX": 138.081
+      },
+      {
+        "file": "Motion/back-wake-3.png",
+        "unitsPerPixel": 0.003506291,
+        "anchorX": 136.161
+      }
+    ],
+    "motion-sit-turn": [
+      {
+        "file": "Motion/sit-turn-0.png",
+        "unitsPerPixel": 0.002403609,
+        "anchorX": 131.828
+      },
+      {
+        "file": "Motion/sit-turn-1.png",
+        "unitsPerPixel": 0.002482626,
+        "anchorX": 134.755
+      },
+      {
+        "file": "Motion/sit-turn-2.png",
+        "unitsPerPixel": 0.002464606,
+        "anchorX": 161.005
+      },
+      {
+        "file": "Motion/sit-turn-3.png",
+        "unitsPerPixel": 0.002377247,
+        "anchorX": 195.649
+      }
+    ],
+    "motion-prone-turn": [
+      {
+        "file": "Motion/prone-turn-0.png",
+        "unitsPerPixel": 0.002399922,
+        "anchorX": 216.273
+      },
+      {
+        "file": "Motion/prone-turn-1.png",
+        "unitsPerPixel": 0.00252857,
+        "anchorX": 177.374
+      },
+      {
+        "file": "Motion/prone-turn-2.png",
+        "unitsPerPixel": 0.002568177,
+        "anchorX": 164.009
+      },
+      {
+        "file": "Motion/prone-turn-3.png",
+        "unitsPerPixel": 0.002412296,
+        "anchorX": 191.94
+      }
+    ],
+    "motion-paw-flank": [
+      {
+        "file": "Motion/paw-flank-0.png",
+        "unitsPerPixel": 0.002811508,
+        "anchorX": 181.061
+      },
+      {
+        "file": "Motion/paw-flank-1.png",
+        "unitsPerPixel": 0.002816307,
+        "anchorX": 180.34
+      },
+      {
+        "file": "Motion/paw-flank-2.png",
+        "unitsPerPixel": 0.002813795,
+        "anchorX": 180.194
+      }
+    ],
+    "motion-swat-flank": [
+      {
+        "file": "Motion/swat-flank-0.png",
+        "unitsPerPixel": 0.00281663,
+        "anchorX": 180.359
+      },
+      {
+        "file": "Motion/swat-flank-1.png",
+        "unitsPerPixel": 0.00281746,
+        "anchorX": 180.407
+      },
+      {
+        "file": "Motion/swat-flank-2.png",
+        "unitsPerPixel": 0.002822207,
+        "anchorX": 181.682
+      }
+    ],
+    "motion-nip-flank": [
+      {
+        "file": "Motion/nip-flank-0.png",
+        "unitsPerPixel": 0.002819642,
+        "anchorX": 180.534
+      },
+      {
+        "file": "Motion/nip-flank-1.png",
+        "unitsPerPixel": 0.002819586,
+        "anchorX": 180.53
+      },
+      {
+        "file": "Motion/nip-flank-2.png",
+        "unitsPerPixel": 0.002824623,
+        "anchorX": 181.822
+      }
+    ],
+    "standTurn": [
+      {
+        "file": "Motion/stand-turn-1.png",
+        "unitsPerPixel": 0.003234727,
+        "anchorX": 169.216,
+        "seconds": 0.22
+      },
+      {
+        "file": "Motion/stand-turn-2.png",
+        "unitsPerPixel": 0.003234727,
+        "anchorX": 155.437,
+        "seconds": 0.26
+      },
+      {
+        "file": "Motion/stand-turn-3.png",
+        "unitsPerPixel": 0.003234727,
+        "anchorX": 170.781,
+        "seconds": 0.29
+      },
+      {
+        "file": "Motion/stand-turn-4.png",
+        "unitsPerPixel": 0.003234727,
+        "anchorX": 168.898,
+        "seconds": 0.2
+      },
+      {
+        "file": "Motion/stand-turn-5.png",
+        "unitsPerPixel": 0.003234727,
+        "anchorX": 168.0,
+        "seconds": 0.25
+      },
+      {
+        "file": "Motion/stand-turn-6.png",
+        "unitsPerPixel": 0.003234727,
+        "anchorX": 179.5,
+        "seconds": 0.2
+      },
+      {
+        "file": "Motion/stand-turn-7.png",
+        "unitsPerPixel": 0.003234727,
+        "anchorX": 167.5,
+        "seconds": 0.25
+      },
+      {
+        "file": "Motion/stand-turn-8.png",
+        "unitsPerPixel": 0.003179524,
+        "anchorX": 145.5,
+        "seconds": 0.23
+      },
+      {
+        "file": "Motion/stand-turn-9.png",
+        "unitsPerPixel": 0.003124321,
+        "anchorX": 131.5,
+        "seconds": 0.23
+      },
+      {
+        "file": "Motion/stand-turn-10.png",
+        "unitsPerPixel": 0.003069118,
+        "anchorX": 113.5,
+        "seconds": 0.25
+      },
+      {
+        "file": "Motion/stand-turn-11.png",
+        "unitsPerPixel": 0.003013915,
+        "anchorX": 97.0,
+        "seconds": 0.27
+      },
+      {
+        "file": "Motion/stand-turn-12.png",
+        "unitsPerPixel": 0.002958712,
+        "anchorX": 100.0,
+        "seconds": 0.3
+      },
+      {
+        "file": "Motion/stand-turn-13.png",
+        "unitsPerPixel": 0.002903509,
+        "anchorX": 115.5,
+        "seconds": 0.3
+      },
+      {
+        "file": "Motion/stand-turn-14.png",
+        "unitsPerPixel": 0.002848306,
+        "anchorX": 140.5,
+        "seconds": 0.26
+      }
+    ],
+    "stepDown": [
+      {
+        "file": "Motion/step-down-0.png",
+        "unitsPerPixel": 0.003187348,
+        "anchorX": 200.0
+      },
+      {
+        "file": "Motion/step-down-1.png",
+        "unitsPerPixel": 0.003187348,
+        "anchorX": 200.5
+      },
+      {
+        "file": "Motion/step-down-2.png",
+        "unitsPerPixel": 0.003187348,
+        "anchorX": 203.5
+      },
+      {
+        "file": "Motion/step-down-3.png",
+        "unitsPerPixel": 0.003187348,
+        "anchorX": 205.0
+      },
+      {
+        "file": "Motion/step-down-4.png",
+        "unitsPerPixel": 0.003187348,
+        "anchorX": 205.0
+      },
+      {
+        "file": "Motion/step-down-5.png",
+        "unitsPerPixel": 0.003187348,
+        "anchorX": 207.5
+      },
+      {
+        "file": "Motion/step-down-6.png",
+        "unitsPerPixel": 0.003187348,
+        "anchorX": 207.5
+      },
+      {
+        "file": "Motion/step-down-7.png",
+        "unitsPerPixel": 0.003187348,
+        "anchorX": 209.5
+      },
+      {
+        "file": "Motion/step-down-8.png",
+        "unitsPerPixel": 0.003187348,
+        "anchorX": 211.0
+      },
+      {
+        "file": "Motion/step-down-9.png",
+        "unitsPerPixel": 0.003187348,
+        "anchorX": 208.5
+      },
+      {
+        "file": "Motion/step-down-10.png",
+        "unitsPerPixel": 0.003187348,
+        "anchorX": 207.0
+      },
+      {
+        "file": "Motion/step-down-11.png",
+        "unitsPerPixel": 0.003187348,
+        "anchorX": 211.0
+      }
+    ],
+    "hopUp": [
+      {
+        "file": "Motion/hop-up-0.png",
+        "unitsPerPixel": 0.00356,
+        "anchorX": 177.0
+      },
+      {
+        "file": "Motion/hop-up-1.png",
+        "unitsPerPixel": 0.00355,
+        "anchorX": 161.0
+      },
+      {
+        "file": "Motion/hop-up-2.png",
+        "unitsPerPixel": 0.00346,
+        "anchorX": 160.0
+      },
+      {
+        "file": "Motion/hop-up-3.png",
+        "unitsPerPixel": 0.00348,
+        "anchorX": 167.5
+      },
+      {
+        "file": "Motion/hop-up-4.png",
+        "unitsPerPixel": 0.00362,
+        "anchorX": 176.5
+      },
+      {
+        "file": "Motion/hop-up-5.png",
+        "unitsPerPixel": 0.00357,
+        "anchorX": 170.5
+      },
+      {
+        "file": "Motion/hop-up-6.png",
+        "unitsPerPixel": 0.00351,
+        "anchorX": 169.0
+      },
+      {
+        "file": "Motion/hop-up-7.png",
+        "unitsPerPixel": 0.00356,
+        "anchorX": 168.5
+      }
+    ],
+    "release": [
+      {
+        "file": "Motion/release-0.png",
+        "unitsPerPixel": 0.00363,
+        "anchorX": 76.5
+      },
+      {
+        "file": "Motion/release-1.png",
+        "unitsPerPixel": 0.00355,
+        "anchorX": 107.5
+      },
+      {
+        "file": "Motion/release-2.png",
+        "unitsPerPixel": 0.00352,
+        "anchorX": 165.5
+      },
+      {
+        "file": "Motion/release-3.png",
+        "unitsPerPixel": 0.00354,
+        "anchorX": 162.0
+      }
+    ],
+    "sitToStand": [
+      {
+        "file": "Motion/sitToStand-0.png",
+        "unitsPerPixel": 0.002961538,
+        "anchorX": 102.7,
+        "seconds": 0.155
+      },
+      {
+        "file": "Motion/sitToStand-1.png",
+        "unitsPerPixel": 0.00295203,
+        "anchorX": 113.82,
+        "seconds": 0.155
+      },
+      {
+        "file": "Motion/sitToStand-2.png",
+        "unitsPerPixel": 0.002647887,
+        "anchorX": 165.075,
+        "seconds": 0.155
+      },
+      {
+        "file": "Motion/sitToStand-3.png",
+        "unitsPerPixel": 0.002469438,
+        "anchorX": 204.5,
+        "seconds": 0.155
+      }
+    ],
+    "walkToTurn": [
+      {
+        "file": "Motion/walkToTurn-0.png",
+        "unitsPerPixel": 0.002832244,
+        "anchorX": 229.5,
+        "seconds": 0.155
+      },
+      {
+        "file": "Motion/walkToTurn-1.png",
+        "unitsPerPixel": 0.002863636,
+        "anchorX": 220.0,
+        "seconds": 0.155
+      },
+      {
+        "file": "Motion/walkToTurn-2.png",
+        "unitsPerPixel": 0.002824074,
+        "anchorX": 216.0,
+        "seconds": 0.155
+      },
+      {
+        "file": "Motion/walkToTurn-3.png",
+        "unitsPerPixel": 0.002725173,
+        "anchorX": 216.5,
+        "seconds": 0.155
+      }
+    ]
+  },
+  "temperament": {
+    "backSleepWeight": 53,
+    "sideSleepWeight": 21,
+    "loafSleepWeight": 10,
+    "quietRestWeight": 9,
+    "walkSpeed": 0.23,
+    "sleepDuration": [
+      32,
+      94
+    ],
+    "irritationThreshold": 3
+  },
+  "transitions": [
+    {
+      "start": "settle-0.png",
+      "through": "motion-paw-low",
+      "end": "paw-aim-0.png"
+    },
+    {
+      "start": "settle-0.png",
+      "through": "motion-swat-low",
+      "end": "swat-aim-0.png"
+    },
+    {
+      "start": "settle-0.png",
+      "through": "motion-nip-low",
+      "end": "nip-aim-0.png"
+    },
+    {
+      "start": "settle-0.png",
+      "through": "motion-paw-mid",
+      "end": "paw-aim-1.png"
+    },
+    {
+      "start": "settle-0.png",
+      "through": "motion-swat-mid",
+      "end": "swat-aim-1.png"
+    },
+    {
+      "start": "settle-0.png",
+      "through": "motion-nip-mid",
+      "end": "nip-aim-1.png"
+    },
+    {
+      "start": "settle-0.png",
+      "through": "motion-paw-high",
+      "end": "paw-aim-2.png"
+    },
+    {
+      "start": "settle-0.png",
+      "through": "motion-swat-high",
+      "end": "swat-aim-2.png"
+    },
+    {
+      "start": "settle-0.png",
+      "through": "motion-nip-high",
+      "end": "nip-aim-2.png"
+    },
+    {
+      "start": "settle-0.png",
+      "through": "motion-paw-side",
+      "end": "paw-1.png"
+    },
+    {
+      "start": "settle-0.png",
+      "through": "motion-swat-side",
+      "end": "swat-1.png"
+    },
+    {
+      "start": "settle-0.png",
+      "through": "motion-nip-side",
+      "end": "nip-1.png"
+    },
+    {
+      "start": "settle-8.png",
+      "through": "motion-paw-rest",
+      "end": "paw-rest-reach.png"
+    },
+    {
+      "start": "settle-8.png",
+      "through": "motion-swat-rest",
+      "end": "swat-rest-reach.png"
+    },
+    {
+      "start": "settle-8.png",
+      "through": "motion-nip-rest",
+      "end": "nip-rest-reach.png"
+    },
+    {
+      "start": "side-0.png",
+      "through": "motion-side-prone",
+      "end": "settle-8.png"
+    },
+    {
+      "start": "loaf-0.png",
+      "through": "motion-loaf-prone",
+      "end": "settle-8.png"
+    },
+    {
+      "start": "walk-0.png",
+      "through": "motion-walk-sit",
+      "end": "settle-0.png"
+    },
+    {
+      "start": "turn-5.png",
+      "through": "motion-back-wake",
+      "end": "back-2.png"
+    },
+    {
+      "start": "settle-0.png",
+      "through": "motion-sit-turn",
+      "end": "settle-0.png",
+      "turnsAround": true
+    },
+    {
+      "start": "settle-8.png",
+      "through": "motion-paw-flank",
+      "end": "Motion/paw-flank-3.png"
+    },
+    {
+      "start": "settle-8.png",
+      "through": "motion-swat-flank",
+      "end": "Motion/swat-flank-3.png"
+    },
+    {
+      "start": "settle-8.png",
+      "through": "motion-nip-flank",
+      "end": "Motion/nip-flank-3.png"
+    },
+    {
+      "start": "settle-8.png",
+      "through": "standTurn",
+      "end": "turn-5.png"
+    },
+    {
+      "start": "settle-0.png",
+      "through": "sitToStand",
+      "end": "Motion/stand-turn-3.png"
+    },
+    {
+      "start": "walk-0.png",
+      "through": "walkToTurn",
+      "end": "Motion/stand-turn-6.png"
+    }
+  ]
+}

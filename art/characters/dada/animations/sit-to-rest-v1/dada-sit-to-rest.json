@@ -1,0 +1,82 @@
+{
+  "image": "dada-sit-to-rest.png",
+  "frameSize": {
+    "w": 420,
+    "h": 420
+  },
+  "anchor": {
+    "x": 394,
+    "y": 397,
+    "origin": "top-left",
+    "units": "px"
+  },
+  "from": "sitting",
+  "to": "lying-on-belly",
+  "loop": false,
+  "holdLastFrame": true,
+  "frames": [
+    {
+      "x": 0,
+      "y": 0,
+      "w": 420,
+      "h": 420,
+      "durationMs": 160
+    },
+    {
+      "x": 420,
+      "y": 0,
+      "w": 420,
+      "h": 420,
+      "durationMs": 140
+    },
+    {
+      "x": 840,
+      "y": 0,
+      "w": 420,
+      "h": 420,
+      "durationMs": 120
+    },
+    {
+      "x": 0,
+      "y": 420,
+      "w": 420,
+      "h": 420,
+      "durationMs": 110
+    },
+    {
+      "x": 420,
+      "y": 420,
+      "w": 420,
+      "h": 420,
+      "durationMs": 100
+    },
+    {
+      "x": 840,
+      "y": 420,
+      "w": 420,
+      "h": 420,
+      "durationMs": 100
+    },
+    {
+      "x": 0,
+      "y": 840,
+      "w": 420,
+      "h": 420,
+      "durationMs": 120
+    },
+    {
+      "x": 420,
+      "y": 840,
+      "w": 420,
+      "h": 420,
+      "durationMs": 150
+    },
+    {
+      "x": 840,
+      "y": 840,
+      "w": 420,
+      "h": 420,
+      "durationMs": 220
+    }
+  ]
+}
