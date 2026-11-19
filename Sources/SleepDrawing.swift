@@ -8,12 +8,13 @@ struct SleepProfile: Decodable {
 
 struct SleepPhase: Equatable {
     let breath, twitch: Int
-    init(age: Double, twitchStart: Double) {
+    init(age: Double, twitchStart: Double, awake: Bool = false) {
         // Quiet pause after exhaling; the silhouette returns to its resting drawing.
-        let cycle=age.truncatingRemainder(dividingBy:4.9)/4.9
+        let period = awake ? 3.7 : 4.9
+        let cycle = age.truncatingRemainder(dividingBy: period) / period
         let inhale=min(1,cycle/0.38), exhale=min(1,max(0,(cycle-0.38)/0.51))
         let rise=(1-cos(.pi*inhale))/2, fall=(1-cos(.pi*exhale))/2
-        breath=Int(((rise-fall)*14).rounded())
+        breath=Int(((rise-fall)*(awake ? 9 : 14)).rounded())
         let t=(age-twitchStart)/0.38
         twitch=(0...1).contains(t) ? Int((4*sin(.pi*t)*sin(2 * .pi*t)).rounded()):0
     }

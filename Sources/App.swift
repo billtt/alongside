@@ -18,6 +18,7 @@ final class AppDelegate:NSObject,NSApplicationDelegate,NSWindowDelegate {
                 let entry=menu.addItem(withTitle:text,action:action,keyEquivalent:key);entry.target=self
             }
             item("走一走",#selector(walk));item("睡一会儿",#selector(sleepCat))
+            if art.clips["grooming"] != nil { item("洗洗脸", #selector(groom)) }
             menu.addItem(.separator())
             item("大小设置…",#selector(showSettings),",");item("退出 Alongside",#selector(quit),"q")
             let status=NSStatusBar.system.statusItem(withLength:NSStatusItem.squareLength)
@@ -33,6 +34,7 @@ final class AppDelegate:NSObject,NSApplicationDelegate,NSWindowDelegate {
         }
     }
     @objc private func walk(){pet?.startWalk(towardDock:true)}
+    @objc private func groom(){pet?.groomNow()}
     @objc private func sleepCat(){pet?.sleepNow()}
     @objc private func quit(){NSApp.terminate(nil)}
     @objc private func changeSize(_ sender:NSSlider) {pet?.resize(sender.doubleValue);updateSize()}

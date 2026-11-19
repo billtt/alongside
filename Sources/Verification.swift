@@ -67,6 +67,37 @@ func verifyApp() throws {
         try require(pet.pose == .carried,"后颈到达鼠标后拎起")
         pet.drag(to:point)
     }
+    if art.clips["grooming"] != nil {
+        let cat = PetController(art: art, screen: screen)
+        cat.change(to: .prone, for: 650)
+        try waitFor(cat, .prone)
+        let home = MotionFrame(cat.frame())
+        var sawBlink = false
+        for _ in 0..<450 {
+            cat.step(1/30)
+            cat.render()
+            if cat.view.eyelids != nil { sawBlink = true }
+        }
+        try require(sawBlink && cat.view.heart == nil, "清醒趴卧会自行眨眼")
+        for _ in 0..<1800 where cat.pose == .prone { cat.step(0.1) }
+        try require(cat.pose == .grooming && MotionFrame(cat.frame()) == home, "趴卧时自行开始理毛")
+        let feet = CGPoint(x: cat.x, y: cat.y)
+        var sawToe = false
+        for _ in 0..<4000 where cat.pose == .grooming {
+            cat.step(1/30)
+            if cat.frame().0 === art.cel("grooming", GroomingBout.Key.toes.rawValue - 1) { sawToe = true }
+        }
+        try require(sawToe && cat.pose == .prone && MotionFrame(cat.frame()) == home &&
+                    CGPoint(x: cat.x, y: cat.y) == feet, "理毛接地并收回同一趴姿")
+        cat.groomNow()
+        cat.step(2)
+        let interrupted = MotionFrame(cat.frame())
+        let touch = try pointOn(cat, .head)
+        cat.press(at: touch)
+        cat.release(at: touch)
+        try require(cat.pose == .look && MotionFrame(cat.frame()) == interrupted, "触碰从正在播放的理毛帧接出")
+        try waitFor(cat, .prone)
+    }
     print("Displays",NSScreen.screens.count)
     for s in NSScreen.screens {
         let sf=pet.detector.read(s);print("Display",s.frame,"Dock",sf.terrain.dock as Any,sf.source)
@@ -321,10 +352,10 @@ func verifyPetting(_ art: PetArt) throws {
               MotionFrame(sequence.frame(at:0.30))==glance && MotionFrame(sequence.frame(at:sequence.duration))==rest &&
               MotionFrame(sequence.frame(at:4))==glance,"背睡回头保持清醒再收势")
     try check((art.temperament.restDuration?.first ?? 0)>=600 && art.temperament.sleepDuration[0]>=600,"安静休息时长")
-    for key in ["loaf","side","turn"] {
-        let cel=art.cel(key,key=="turn" ? 5:2)
+    for key in ["loaf","side","turn","settle"] {
+        let cel=art.cel(key,key=="turn" ? 5 : key=="settle" ? 8 : 2)
         guard let sleep=cel.sleeping else {throw ArtError.invalid("睡姿微动 "+key)}
-        let inhale=SleepPhase(age:1.85,twitchStart:.infinity)
+        let inhale=SleepPhase(age:1.85,twitchStart:.infinity,awake:key=="settle")
         let shifted=sleep.image(at:inhale)
         let row=shifted.bytesPerRow, h=shifted.height
         let a=NSBitmapImageRep(cgImage:sleep.image(at:SleepPhase(age:0,twitchStart:.infinity)))
@@ -332,7 +363,7 @@ func verifyPetting(_ art: PetArt) throws {
         try check(row>0 && a.bytesPerRow==b.bytesPerRow,"相同画幅")
         let rgb0=a.bitmapData!, rgb1=b.bitmapData!, stride=a.bytesPerRow
         try check(memcmp(rgb0,rgb1,stride*h) != 0 && memcmp(rgb0+(h-8)*stride,rgb1+(h-8)*stride,8*stride)==0,"呼吸时胸背起伏、承重轮廓不动 "+key)
-        if key != "turn" {
+        if key == "loaf" || key == "side" {
             let t=SleepPhase(age:1.85,twitchStart:1.77)
             let c=NSBitmapImageRep(cgImage:sleep.image(at:t))
             try check(memcmp(rgb1,c.bitmapData!,stride*h) != 0,"可见胡须有独立微动 "+key)

@@ -2,7 +2,7 @@ import AppKit
 
 enum Pose: Equatable {
     case changing, sitting, prone, side, loaf, sleepSide, sleepBack, sleepLoaf
-    case look, backLook, walking, hop, fall, carried
+    case look, backLook, grooming, walking, hop, fall, carried
     var asleep:Bool { self == .sleepSide || self == .sleepBack || self == .sleepLoaf }
 }
 final class PetController {
@@ -30,6 +30,9 @@ final class PetController {
     private var walkStart=0
     private var walkRate:CGFloat {art.gait.speed}
     private var wakeHold:Double {Double.random(in:4...5.5)}
+    private var nextBlink = Double.infinity
+    private var nextGroom = Double.infinity
+    private var restAfterGroom = 0.0
     private var nextTwitch=Double.infinity
     private var enjoymentAt:Double?
 
@@ -110,7 +113,15 @@ final class PetController {
         reaction=nil
         if p == .carried || p == .fall || p == .hop {heartAge=nil;blinkAge=nil}
         nextTwitch=(p == .sleepSide || p == .sleepLoaf) ? .random(in:12...30):.infinity
+        nextBlink = p == .prone ? .random(in: 4...13) : .infinity
+        nextGroom = p == .prone && art.clips["grooming"] != nil ? .random(in: 80...180) : .infinity
         pose=p;duration=seconds;age=0
+        if p == .grooming {
+            let bout = GroomingBout(art: art, motions: motions)
+            reaction = bout.sequence
+            duration = bout.sequence.duration
+            restAfterGroom = max(1, seconds - duration)
+        }
     }
     // Both ends belong to the actual playing clips, including when a menu action interrupts a turn.
     func change(to next:Pose, for seconds:Double, from initial:MotionFrame?=nil, maximumFrameTime:Double = .infinity) {
@@ -144,6 +155,12 @@ final class PetController {
     private func beginBackSleep() {
         change(to:.sleepBack,for:art.temperament.sleepTime)
     }
+    func groomNow() {
+        guard isGrounded, art.clips["grooming"] != nil, pose != .grooming, arrival?.pose != .grooming else { return }
+        let rest = pose == .prone ? duration - age : art.temperament.restTime
+        change(to: .grooming, for: rest)
+        render()
+    }
     func sleepNow() {
         guard isGrounded else{return}
         pressurePoint=nil;petting.cancelDrag();heartAge=nil;blinkAge=nil
@@ -172,6 +189,9 @@ final class PetController {
         switch pose {
         case .changing:
             if let arrival {set(arrival.pose,arrival.duration)}
+        case .grooming:
+            set(.prone, restAfterGroom)
+            nextGroom = .random(in: 180...360)
         case .sitting: randomRest()
         case .walking: change(to:.sitting,for:1.4)
         case .look: set(restShape,restShape.asleep ? art.temperament.sleepTime : (restShape == .sitting || restShape == .walking ? 4.2:art.temperament.restTime))
@@ -274,6 +294,10 @@ final class PetController {
             let peak=pose.asleep ? 0:1
             let home=MotionFrame(art.cel(key,pose.asleep ? 2:0))
             play(.look,from:initial,toward:MotionFrame(art.cel(key,peak)),home:home,hold:pose.asleep ? wakeHold:0.24,frameTime:0.07)
+        case .grooming:
+            restShape = .prone
+            let home = neutralFrame(for: .prone)
+            play(.look, from: initial, toward: home, home: home, hold: 0.55, frameTime: 0.07)
         case .prone where response == .notice:
             restShape = .prone
             play(.look,from:initial,toward:MotionFrame(art.cel("settle",7)),home:initial,hold:0.23,frameTime:0.07)
@@ -302,7 +326,7 @@ final class PetController {
                 restShape = .walking;peak=MotionFrame(art.cel("settle",0),initial.mirrored)
                 home=MotionFrame(art.cel("walk",0),initial.mirrored)
             } else {
-                restShape = rest == .prone ? .prone:.sitting
+                restShape = (rest == .prone || rest == .grooming) ? .prone:.sitting
                 home=neutralFrame(for:restShape);peak=home
             }
         }
@@ -319,7 +343,7 @@ final class PetController {
         switch posture {
         case .side: return MotionFrame(art.cel("side",0))
         case .loaf: return MotionFrame(art.cel("loaf",0))
-        case .prone: return MotionFrame(art.cel("settle",8))
+        case .prone, .grooming: return MotionFrame(art.cel("settle",8))
         default: return MotionFrame(art.cel("settle",0))
         }
     }
@@ -361,6 +385,9 @@ final class PetController {
             if dx != 0 {x=t.turnX(from:x,delta:dx,radius:radius,onDock:y>t.floor+1)}
         }
         switch pose {
+        case .prone:
+            if age >= nextBlink + 0.27 { nextBlink = age + .random(in: 4...15) }
+            if age >= nextGroom, age < duration, pressurePoint == nil { groomNow() }
         case .carried: followHand()
         case .walking:
             let previous=art.gait.sample(time:previousAge,speed:walkRate,startingAt:walkStart)
@@ -398,7 +425,7 @@ final class PetController {
         let flip:Bool
         switch pose {
         case .sitting: (key,i)=("settle",0);flip=false
-        case .changing: preconditionFailure("缺少过渡帧")
+        case .changing, .grooming: preconditionFailure("缺少过渡帧")
         case .prone: (key,i)=("settle",8);flip=false
         case .side,.loaf:
             key=pose == .side ? "side":"loaf";i=age.truncatingRemainder(dividingBy:5.3)>5.0 ? 1:0;flip=false
@@ -422,7 +449,7 @@ final class PetController {
     func render() {
         let (cel,flip)=frame()
         let k=unit*cel.scale
-        let sleeping=pose.asleep ? SleepPhase(age:age,twitchStart:nextTwitch):nil
+        let sleeping = pose.asleep || pose == .prone ? SleepPhase(age: age, twitchStart: nextTwitch, awake: pose == .prone) : nil
         let grounded=isGrounded || pose == .hop || (pose != .carried && y<=surface.terrain.support(x,radius)+0.001)
         if let onset=enjoymentAt,age>=onset {
             let placement=SpriteDrawing(cel:cel,grounded:grounded,mirror:flip,feet:CGPoint(x:x,y:y),k:k,stretch:1,backing:screen.backingScaleFactor,screenFloor:surface.terrain.floor)
@@ -440,10 +467,14 @@ final class PetController {
         let rect=draw.frame
         let origin=CGPoint(x:heartOrigin.x-rect.minX,y:heartOrigin.y-rect.minY)
         let heart=heartAge.flatMap { draw.heart(progress:$0/0.78,unit:unit,origin:origin) }
+        let idleBlink = age - nextBlink
+        let spontaneousLid: Int? = (0..<0.27).contains(idleBlink) && art.eyelids.count == 2
+            ? (idleBlink < 0.07 || idleBlink > 0.18 ? 0 : 1) : nil
         let lid=blinkAge.flatMap { elapsed -> Int? in
             guard cel.eyeCenters != nil, art.eyelids.count==2 else {return nil}
             return elapsed<0.07 || elapsed>0.44 ? 0:1
         }
+        ?? spontaneousLid
         let redraw=view.drawing?.sleepPhase != sleeping || heart != view.heart || lid != shownLid || view.drawing?.cel !== cel || view.drawing?.transform != draw.transform ||
                    view.drawing?.grounded != grounded || rect.size != panel.frame.size
         view.heart=heart;view.eyelids=lid.map {art.eyelids[$0]};shownLid=lid

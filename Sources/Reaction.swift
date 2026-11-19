@@ -86,7 +86,20 @@ struct Reaction {
         beats.append(Beat(frame:frame,end:(last?.end ?? 0)+seconds,travel:travel))
     }
 
-    func travel(at time:Double)->CGFloat {(beats.first {time<$0.end} ?? beats.last!).travel}
+    private func beat(at time: Double) -> Beat {
+        var low = 0, high = beats.count - 1
+        while low < high {
+            let mid = (low + high) / 2
+            if time < beats[mid].end { high = mid } else { low = mid + 1 }
+        }
+        return beats[low]
+    }
+
+    func travel(at time:Double)->CGFloat {beat(at:time).travel}
+
+    init(library: MotionLibrary, timed: [(MotionFrame, Double)]) {
+        for (frame, seconds) in timed { append(frame, for: seconds, library: library) }
+    }
 
     init(library:MotionLibrary,path: [MotionFrame], maximumFrameTime: Double = .infinity) {
         for frame in path {
@@ -107,7 +120,7 @@ struct Reaction {
     }
 
     func frame(at elapsed: Double) -> (Cel, Bool) {
-        let frame = (beats.first { elapsed < $0.end } ?? beats.last!).frame
+        let frame = beat(at: elapsed).frame
         return (frame.cel,frame.mirrored)
     }
 }

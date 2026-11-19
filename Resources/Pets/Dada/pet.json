@@ -27,6 +27,25 @@
       "stridePlant": [[0, 0, 0], [0.042, 0, 1], [0.105, 0, 0], [0.25, 0, 0], [0.47, 0.029, 0], [0.68, 0.043, 0], [0.84, 0.038, 0], [1, 0.022, 0]]
     },
     "clips": {
+      "grooming": ["prone"],
+      "wash-rest-lift": ["prone"],
+      "wash-lift-wrist": ["prone"],
+      "wash-wrist-lick": ["prone"],
+      "wash-wrist-cheek": ["prone"],
+      "wash-cheek-ear": ["prone"],
+      "wash-ear-sweep": ["prone"],
+      "wash-sweep-lower": ["prone"],
+      "wash-lower-wrist": ["prone"],
+      "wash-lower-pause": ["prone"],
+      "wash-pause-rest": ["prone"],
+      "wash-pause-chest": ["prone"],
+      "wash-pause-shoulder": ["prone"],
+      "wash-shoulder-flank": ["prone"],
+      "wash-pause-sit": ["prone"],
+      "wash-sit-raise": ["prone"],
+      "wash-raise-toes": ["prone"],
+      "wash-toes-retract": ["prone"],
+      "wash-retract-raise": ["prone"],
       "side": ["side"],
       "back": ["rear"],
       "loaf": ["loaf"],
@@ -77,6 +96,9 @@
     }
   },
   "touchLayouts": {
+    "washFront": {"head": [0.29, 0.5], "headRadius": [0.2, 0.24], "back": [[0.49, 0.36], [0.69, 0.35], [0.91, 0.52], [0.91, 0.7], [0.68, 0.64], [0.5, 0.57]], "sensitive": [[0.02, 0.83], [0.39, 0.71], [0.64, 0.65], [0.83, 0.79], [0.87, 0.97], [0.02, 0.99]]},
+    "washShoulder": {"head": [0.45, 0.42], "headRadius": [0.18, 0.23], "back": [[0.49, 0.36], [0.69, 0.35], [0.91, 0.52], [0.91, 0.7], [0.68, 0.64], [0.5, 0.57]], "sensitive": [[0.02, 0.83], [0.39, 0.71], [0.64, 0.65], [0.83, 0.79], [0.87, 0.97], [0.02, 0.99]]},
+    "washHip": {"head": [0.38, 0.33], "headRadius": [0.19, 0.23], "back": [[0.49, 0.36], [0.69, 0.35], [0.91, 0.52], [0.91, 0.7], [0.68, 0.64], [0.5, 0.57]], "sensitive": [[0.02, 0.83], [0.39, 0.71], [0.64, 0.65], [0.83, 0.79], [0.87, 0.97], [0.02, 0.99]]},
     "sit": {"head": [0.33, 0.21], "headRadius": [0.29, 0.23], "back": [[0.5, 0.24], [0.92, 0.35], [0.94, 0.71], [0.65, 0.64], [0.48, 0.44]], "sensitive": [[0.01, 0.6], [0.57, 0.55], [0.83, 0.75], [0.78, 1], [0, 1]]},
     "prone": {"head": [0.25, 0.32], "headRadius": [0.22, 0.34], "back": [[0.39, 0.22], [0.71, 0.16], [0.97, 0.41], [0.94, 0.65], [0.73, 0.65], [0.4, 0.51]], "sensitive": [[0, 0.82], [0.34, 0.71], [0.61, 0.69], [0.86, 0.64], [0.88, 0.91], [0.63, 1], [0, 1]]},
     "loaf": {"head": [0.3, 0.25], "headRadius": [0.26, 0.29], "back": [[0.47, 0.23], [0.74, 0.2], [0.97, 0.45], [0.95, 0.69], [0.69, 0.6], [0.5, 0.47]], "sensitive": [[0, 0.84], [0.32, 0.72], [0.64, 0.69], [0.88, 0.77], [0.91, 1], [0, 1]]},
@@ -87,6 +109,25 @@
     "glance": {"head": [0.54, 0.23], "headRadius": [0.23, 0.26], "back": [[0.07, 0.34], [0.46, 0.25], [0.83, 0.42], [0.98, 0.72], [0.78, 0.81], [0.31, 0.77], [0.02, 0.88]], "sensitive": []}
   },
   "clipLayouts": {
+    "grooming": ["washFront", "washFront", "washFront", "washFront", "washFront", "washFront", "washFront", "washFront", "washFront", "washShoulder", "washShoulder", "washHip", "washHip", "washHip", "washHip"],
+    "wash-rest-lift": ["washFront", "washFront", "washFront"],
+    "wash-lift-wrist": ["washFront", "washFront"],
+    "wash-wrist-lick": ["washFront"],
+    "wash-wrist-cheek": ["washFront", "washFront", "washFront"],
+    "wash-cheek-ear": ["washFront", "washFront"],
+    "wash-ear-sweep": ["washFront", "washFront"],
+    "wash-sweep-lower": ["washFront", "washFront"],
+    "wash-lower-wrist": ["washFront", "washFront"],
+    "wash-lower-pause": ["washFront", "washFront", "washFront"],
+    "wash-pause-rest": ["washFront", "washFront", "washFront"],
+    "wash-pause-chest": ["washFront", "washFront"],
+    "wash-pause-shoulder": ["washFront", "washFront", "washShoulder", "washShoulder"],
+    "wash-shoulder-flank": ["washShoulder", "washShoulder"],
+    "wash-pause-sit": ["washFront", "washFront", "washHip", "washHip", "washHip"],
+    "wash-sit-raise": ["washHip", "washHip", "washHip", "washHip"],
+    "wash-raise-toes": ["washHip", "washHip"],
+    "wash-toes-retract": ["washHip"],
+    "wash-retract-raise": ["washHip"],
     "side": ["side"],
     "loaf": ["loaf"],
     "walk": ["walk"],
@@ -114,6 +155,103 @@
   "gaitSpeed": 0.72,
   "walkContacts": [[23, 39], [39, 62], [62, 132], [301, 326], [326, 355], [136, 209]],
   "clips": {
+    "grooming": [
+      {"file": "Grooming/lift.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/wrist.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/lick.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/cheek.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/ear.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/sweep.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/lower.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/pause.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/chest.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/shoulder.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/flank.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/sit.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/raise.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/toes.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/retract.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07}
+    ],
+    "wash-rest-lift": [
+      {"file": "Grooming/rest-lift-1.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/rest-lift-2.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/rest-lift-3.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07}
+    ],
+    "wash-lift-wrist": [
+      {"file": "Grooming/lift-wrist-1.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/lift-wrist-2.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07}
+    ],
+    "wash-wrist-lick": [
+      {"file": "Grooming/wrist-lick-1.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07}
+    ],
+    "wash-wrist-cheek": [
+      {"file": "Grooming/wrist-cheek-1.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/wrist-cheek-2.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/wrist-cheek-3.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07}
+    ],
+    "wash-cheek-ear": [
+      {"file": "Grooming/cheek-ear-1.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/cheek-ear-2.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07}
+    ],
+    "wash-ear-sweep": [
+      {"file": "Grooming/ear-sweep-1.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/ear-sweep-2.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07}
+    ],
+    "wash-sweep-lower": [
+      {"file": "Grooming/sweep-lower-1.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/sweep-lower-2.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07}
+    ],
+    "wash-lower-wrist": [
+      {"file": "Grooming/lower-wrist-1.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/lower-wrist-2.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07}
+    ],
+    "wash-lower-pause": [
+      {"file": "Grooming/lower-pause-1.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/lower-pause-2.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/lower-pause-3.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07}
+    ],
+    "wash-pause-rest": [
+      {"file": "Grooming/pause-rest-1.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/pause-rest-2.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/pause-rest-3.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07}
+    ],
+    "wash-pause-chest": [
+      {"file": "Grooming/pause-chest-1.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/pause-chest-2.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07}
+    ],
+    "wash-pause-shoulder": [
+      {"file": "Grooming/pause-shoulder-1.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/pause-shoulder-2.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/pause-shoulder-3.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/pause-shoulder-4.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07}
+    ],
+    "wash-shoulder-flank": [
+      {"file": "Grooming/shoulder-flank-1.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/shoulder-flank-2.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07}
+    ],
+    "wash-pause-sit": [
+      {"file": "Grooming/pause-sit-1.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/pause-sit-2.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/pause-sit-3.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/pause-sit-4.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/pause-sit-5.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07}
+    ],
+    "wash-sit-raise": [
+      {"file": "Grooming/sit-raise-1.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/sit-raise-2.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/sit-raise-3.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/sit-raise-4.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07}
+    ],
+    "wash-raise-toes": [
+      {"file": "Grooming/raise-toes-1.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07},
+      {"file": "Grooming/raise-toes-2.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07}
+    ],
+    "wash-toes-retract": [
+      {"file": "Grooming/toes-retract-1.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07}
+    ],
+    "wash-retract-raise": [
+      {"file": "Grooming/retract-raise-1.png", "anchorX": 171.2, "unitsPerPixel": 0.00324, "seconds": 0.07}
+    ],
     "side": [
       {
         "file": "side-0.png",
@@ -346,6 +484,7 @@
       },
       {
         "file": "settle-8.png",
+        "sleepDrawing": {"chestX": 0.66, "chestRadius": 0.37, "whiskerTips": []},
         "eyeCenters": [[66, 75], [120, 75]],
         "unitsPerPixel": 0.0026954177897574125,
         "anchorX": 200.0
@@ -1339,6 +1478,24 @@
     "irritationThreshold": 3
   },
   "transitions": [
+    {"start": "settle-8.png", "through": "wash-rest-lift", "end": "Grooming/lift.png"},
+    {"start": "Grooming/lift.png", "through": "wash-lift-wrist", "end": "Grooming/wrist.png"},
+    {"start": "Grooming/wrist.png", "through": "wash-wrist-lick", "end": "Grooming/lick.png"},
+    {"start": "Grooming/wrist.png", "through": "wash-wrist-cheek", "end": "Grooming/cheek.png"},
+    {"start": "Grooming/cheek.png", "through": "wash-cheek-ear", "end": "Grooming/ear.png"},
+    {"start": "Grooming/ear.png", "through": "wash-ear-sweep", "end": "Grooming/sweep.png"},
+    {"start": "Grooming/sweep.png", "through": "wash-sweep-lower", "end": "Grooming/lower.png"},
+    {"start": "Grooming/lower.png", "through": "wash-lower-wrist", "end": "Grooming/wrist.png"},
+    {"start": "Grooming/lower.png", "through": "wash-lower-pause", "end": "Grooming/pause.png"},
+    {"start": "Grooming/pause.png", "through": "wash-pause-rest", "end": "settle-8.png"},
+    {"start": "Grooming/pause.png", "through": "wash-pause-chest", "end": "Grooming/chest.png"},
+    {"start": "Grooming/pause.png", "through": "wash-pause-shoulder", "end": "Grooming/shoulder.png"},
+    {"start": "Grooming/shoulder.png", "through": "wash-shoulder-flank", "end": "Grooming/flank.png"},
+    {"start": "Grooming/pause.png", "through": "wash-pause-sit", "end": "Grooming/sit.png"},
+    {"start": "Grooming/sit.png", "through": "wash-sit-raise", "end": "Grooming/raise.png"},
+    {"start": "Grooming/raise.png", "through": "wash-raise-toes", "end": "Grooming/toes.png"},
+    {"start": "Grooming/toes.png", "through": "wash-toes-retract", "end": "Grooming/retract.png"},
+    {"start": "Grooming/retract.png", "through": "wash-retract-raise", "end": "Grooming/raise.png"},
     {
       "start": "settle-0.png",
       "through": "motion-paw-low",

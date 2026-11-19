@@ -202,6 +202,9 @@ final class PetArt {
             }
         }
         guard let walk=loaded["walk"],walk.count==6 else {throw ArtError.invalid("walk")}
+        if let grooming = loaded["grooming"], grooming.count != GroomingBout.Key.allCases.count - 1 {
+            throw ArtError.invalid("理毛关键帧数量")
+        }
         gait=try WalkCycle(frames:walk,contacts:data.walkContacts,speed:data.gaitSpeed ?? traits.walkSpeed)
         clips=loaded
         var byFile:[String:Cel]=[:]
