@@ -4,7 +4,8 @@ import ImageIO
 private struct FrameSpec: Decodable {
     let file: String
     let unitsPerPixel, anchorX: CGFloat
-    let gripFromTop: CGFloat?
+    let gripFromTop, pitchDegrees, restingWeight: CGFloat?
+    let eyeCenters: [CGPoint]?
     let contact: [CGFloat]?
     let seconds: Double?
 }
@@ -22,24 +23,63 @@ private struct Descriptor: Decodable {
     let name:String
     let clips:[String:[FrameSpec]]
     let temperament:Temperament
+    let levelView: LevelViewSpec?
+    let clipScale:[String:[CGFloat]]?
+    let gaitSpeed:CGFloat?
+    let walkContacts:[[CGFloat]]?
+    let touchLayouts:[String:TouchLayout]?
+    let clipLayouts:[String:[String]]?
     let transitions:[TrackSpec]?
+}
+private struct LevelViewSpec: Decodable {
+    let profiles: [String: [[CGFloat]]]
+    let restingContacts: [String: RestingContact]?
+    let clips: [String: [String]]
 }
 enum ArtError: Error { case invalid(String) }
 
 final class Cel {
     let image, groundedImage: CGImage
     let scale, anchorX, gripHeight: CGFloat
+    let supportOffset: CGFloat  // distance up from the bottom of the grounded image
     let contact: CGPoint?
     let seconds: Double?
+    fileprivate(set) var touchLayout:TouchLayout?
+    fileprivate(set) var eyeCenters:[CGPoint]?
+    let sourceSize: CGSize
+    private let levelView: LevelView?
+    private let pitch: CGAffineTransform
     private let mask:NSBitmapImageRep
-    init(url:URL,scale:CGFloat,anchorX:CGFloat,gripFromTop:CGFloat?,contact:[CGFloat]?,seconds:Double?) throws {
+    init(url:URL,scale:CGFloat,anchorX:CGFloat,gripFromTop:CGFloat?,contact:[CGFloat]?,seconds:Double?,pitchDegrees:CGFloat?=nil,levelKnots:[[CGFloat]]?=nil,restingContact:RestingContact?=nil,restingWeight:CGFloat=1) throws {
         guard let src=CGImageSourceCreateWithURL(url as CFURL,nil),
-              let cg=CGImageSourceCreateImageAtIndex(src,0,[kCGImageSourceShouldCacheImmediately:true] as CFDictionary)
+              var cg=CGImageSourceCreateImageAtIndex(src,0,[kCGImageSourceShouldCacheImmediately:true] as CFDictionary)
         else {throw ArtError.invalid(url.lastPathComponent)}
+        sourceSize = CGSize(width: cg.width, height: cg.height)
+        if let levelKnots, !levelKnots.isEmpty {
+            (cg, levelView) = try LevelView.render(cg, knots: levelKnots, contact: restingContact, scale: scale, weight: restingWeight)
+        } else { levelView = nil }
+        var pivot=anchorX
+        if let angle=pitchDegrees {
+            let rotation=CGAffineTransform(rotationAngle:angle * .pi/180)
+            let src=CGRect(x:0,y:0,width:cg.width,height:cg.height)
+            let bounds=src.applying(rotation).integral
+            guard let ctx=CGContext(data:nil,width:Int(bounds.width),height:Int(bounds.height),bitsPerComponent:8,
+                                    bytesPerRow:0,space:CGColorSpaceCreateDeviceRGB(),bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue)
+            else {throw ArtError.invalid(url.lastPathComponent)}
+            ctx.translateBy(x:-bounds.minX,y:-bounds.minY);ctx.concatenate(rotation)
+            ctx.interpolationQuality = .high;ctx.draw(cg,in:src)
+            guard let rotated=ctx.makeImage() else {throw ArtError.invalid(url.lastPathComponent)}
+            pivot=CGPoint(x:anchorX,y:src.midY).applying(rotation).x-bounds.minX
+            // Landmarks are measured from the PNG's top edge; Core Graphics rotates y-up.
+            pitch=CGAffineTransform(a:rotation.a,b:-rotation.b,c:-rotation.c,d:rotation.d,
+                                    tx:rotation.c*src.height-bounds.minX,ty:bounds.maxY-rotation.d*src.height)
+            cg=rotated
+        } else { pitch = .identity }
         image=cg
         let pixels=NSBitmapImageRep(cgImage:cg)
-        mask=pixels;self.scale=scale;self.anchorX=anchorX;self.seconds=seconds
-        gripHeight=CGFloat(cg.height)-(gripFromTop ?? CGFloat(cg.height)*0.04)
+        mask=pixels;self.scale=scale;self.anchorX=pivot;self.seconds=seconds
+        let grip=CGPoint(x:anchorX,y:gripFromTop ?? sourceSize.height*0.04)
+        gripHeight=CGFloat(cg.height)-(levelView?.projected(grip) ?? grip).applying(pitch).y
         // A whisker or a few antialias pixels below a foot do not support the animal.
         let minInk=max(2,Int(ceil(Double(cg.width)*0.06)))
         var height=cg.height
@@ -51,38 +91,59 @@ final class Cel {
             }
             if ink>=minInk {height=row+1;break}
         }
+        if let plane=levelView?.supportFromTop {
+            height=cg.height
+            supportOffset=CGFloat(height)-CGPoint(x:anchorX,y:plane).applying(pitch).y
+        } else {supportOffset=0}
         groundedImage=cg.cropping(to:CGRect(x:0,y:0,width:cg.width,height:height)) ?? cg
         if let contact {
-            guard contact.count==2, (0..<CGFloat(cg.width)).contains(contact[0]),
-                  (0..<CGFloat(height)).contains(contact[1]) else {throw ArtError.invalid(url.lastPathComponent)}
-            self.contact=CGPoint(x:contact[0],y:CGFloat(height)-contact[1])
+            guard contact.count==2, (0..<sourceSize.width).contains(contact[0]),
+                  (0..<sourceSize.height).contains(contact[1]) else {throw ArtError.invalid(url.lastPathComponent)}
+            let p=CGPoint(x:contact[0],y:contact[1])
+            let placed=(levelView?.projected(p) ?? p).applying(pitch)
+            self.contact=CGPoint(x:placed.x,y:CGFloat(height)-placed.y)
         } else {self.contact=nil}
+    }
+    func projected(_ source:CGPoint)->CGPoint {(levelView?.projected(source) ?? source).applying(pitch)}
+    func original(_ pixel:CGPoint)->CGPoint {
+        let level=pixel.applying(pitch.inverted())
+        return levelView?.original(level) ?? level
     }
     func contains(_ p:CGPoint, height:Int)->Bool {
         guard p.x>=0,p.y>=0,p.x<CGFloat(image.width),p.y<CGFloat(height) else {return false}
         return (mask.colorAt(x:Int(p.x),y:height-1-Int(p.y))?.alphaComponent ?? 0)>0.10
     }
-    // Distance from the lowest paw to the lowest ink at or behind each column
-    // in the left-facing drawing. Used only for cels that straddle the Dock.
-    lazy var trailingClearance: [CGFloat] = {
-        let height=groundedImage.height
-        var result=[CGFloat](repeating:.infinity,count:image.width)
-        var lowest=height
-        for col in (0..<image.width).reversed() {
-            for depth in 0..<lowest {
-                if (mask.colorAt(x:col,y:height-1-depth)?.alphaComponent ?? 0)>0.10 {
-                    lowest=depth
-                    break
-                }
+    private lazy var sole:[CGFloat] = {
+        let h=groundedImage.height
+        let ctx=CGContext(data:nil,width:image.width,height:h,bitsPerComponent:8,bytesPerRow:image.width*4,
+                          space:CGColorSpaceCreateDeviceRGB(),bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue)!
+        ctx.draw(groundedImage,in:CGRect(x:0,y:0,width:image.width,height:h))
+        let alpha=ctx.data!.assumingMemoryBound(to:UInt8.self)
+        return withExtendedLifetime(ctx) {(0..<image.width).map { col in
+            for depth in 0..<h where alpha[(h-1-depth)*ctx.bytesPerRow+col*4+3]>25 {
+                return CGFloat(depth)
             }
-            if lowest<height {result[col]=CGFloat(lowest)}
+            return .infinity
+        }}
+    }()
+    // Lowest visible pixel among all columns on the platform side of the edge.
+    lazy var leadingClearance:[CGFloat] = envelope(trailing:false)
+    lazy var trailingClearance:[CGFloat] = envelope(trailing:true)
+    private func envelope(trailing:Bool)->[CGFloat] {
+        var result=sole, lowest=CGFloat.infinity
+        for n in result.indices {
+            let i=trailing ? result.count-1-n:n
+            lowest=min(lowest,result[i]);result[i]=lowest
         }
         return result
-    }()
+    }
+
 }
 final class PetArt {
     let name:String
     let temperament:Temperament
+    let gait:WalkCycle
+    let eyelids:[EyeDrawing]
     let clips:[String:[Cel]]
     let transitions:[(frames:[Cel], turnsAround:Bool)]
     init(root:URL) throws {
@@ -91,11 +152,52 @@ final class PetArt {
         guard traits.sleepDuration.count==2,traits.sleepDuration[0]>0,traits.sleepDuration[1]>=traits.sleepDuration[0],
               traits.walkSpeed>0,traits.irritationThreshold>1 else {throw ArtError.invalid("无效的行为参数")}
         name=data.name;temperament=traits
-        let loaded=try data.clips.mapValues { try $0.map {try Cel(url:root.appendingPathComponent($0.file),scale:$0.unitsPerPixel,anchorX:$0.anchorX,gripFromTop:$0.gripFromTop,contact:$0.contact,seconds:$0.seconds)} }
+        var loaded:[String:[Cel]]=[:]
+        if let view=data.levelView, Set(view.clips.keys) != Set(data.clips.keys) {
+            throw ArtError.invalid("平视标定未覆盖所有动作")
+        }
+        for (key,specs) in data.clips {
+            let scales=data.clipScale?[key] ?? [1]
+            guard (scales.count==1 || scales.count==specs.count),scales.allSatisfy({$0>0}) else {throw ArtError.invalid(key)}
+            let views=data.levelView?.clips[key]
+            if let views, views.count != 1 && views.count != specs.count {throw ArtError.invalid(key)}
+            loaded[key]=try specs.enumerated().map { i,spec in
+                var knots:[[CGFloat]]?
+                var resting:RestingContact?
+                if let views {
+                    let name=views[views.count==1 ? 0:i]
+                    guard let profile=data.levelView?.profiles[name] else {throw ArtError.invalid(name)}
+                    knots=profile
+                    resting=data.levelView?.restingContacts?[name]
+                }
+                return try Cel(url:root.appendingPathComponent(spec.file),scale:spec.unitsPerPixel*scales[scales.count==1 ? 0:i],
+                        anchorX:spec.anchorX,gripFromTop:spec.gripFromTop,contact:spec.contact,seconds:spec.seconds,pitchDegrees:spec.pitchDegrees,levelKnots:knots,
+                        restingContact:resting,restingWeight:spec.restingWeight ?? 1)
+            }
+        }
+        for (key, names) in data.clipLayouts ?? [:] {
+            guard let frames = loaded[key], names.count == 1 || names.count == frames.count else {throw ArtError.invalid(key)}
+            for (i, cel) in frames.enumerated() {
+                guard let layout = data.touchLayouts?[names.count == 1 ? names[0] : names[i]],
+                      layout.headRadius.x > 0, layout.headRadius.y > 0 else {throw ArtError.invalid(key)}
+                cel.touchLayout = layout
+            }
+        }
+        guard let walk=loaded["walk"],walk.count==6 else {throw ArtError.invalid("walk")}
+        gait=try WalkCycle(frames:walk,contacts:data.walkContacts,speed:data.gaitSpeed ?? traits.walkSpeed)
         clips=loaded
         var byFile:[String:Cel]=[:]
         for (key,specs) in data.clips {
-            for (spec,cel) in zip(specs,loaded[key]!) {byFile[spec.file]=cel}
+            for (spec,cel) in zip(specs,loaded[key]!) {
+                if let eyes=spec.eyeCenters {
+                    guard eyes.count==1 || (eyes.count==2 && eyes[1].x>eyes[0].x) else {throw ArtError.invalid(spec.file)}
+                    cel.eyeCenters=eyes.map(cel.projected)
+                }
+                byFile[spec.file]=cel
+            }
+        }
+        eyelids=(loaded["loaf"] ?? []).dropFirst().compactMap { cel in
+            cel.eyeCenters.flatMap {EyeDrawing(face:cel.image,centers:$0)}
         }
         transitions=try (data.transitions ?? []).map { track in
             guard let start=byFile[track.start],let end=byFile[track.end],
@@ -115,24 +217,48 @@ struct SpriteDrawing {
     let frame: CGRect
     let transform: CGAffineTransform
     var image: CGImage { grounded ? cel.groundedImage : cel.image }
-    init(cel:Cel,grounded:Bool,mirror:Bool,feet:CGPoint,k:CGFloat,stretch:CGFloat,backing:CGFloat) {
+    init(cel:Cel,grounded:Bool,mirror:Bool,feet:CGPoint,k:CGFloat,stretch:CGFloat,backing:CGFloat,headroom:CGFloat=0,screenFloor:CGFloat?=nil) {
         self.cel=cel;self.grounded=grounded
         let img=grounded ? cel.groundedImage:cel.image
         let horizontal=mirror ? -k:k
+        let base=feet.y-(grounded ? cel.supportOffset*k*stretch:0)
         var mapping=CGAffineTransform(a:horizontal,b:0,c:0,d:k*stretch,
-                                      tx:feet.x-cel.anchorX*horizontal,ty:feet.y)
+                                      tx:feet.x-cel.anchorX*horizontal,ty:base)
         let ink=CGRect(x:0,y:0,width:img.width,height:img.height).applying(mapping)
-        let left=floor(ink.minX*backing)/backing, bottom=floor(ink.minY*backing)/backing
+        let left=floor(ink.minX*backing)/backing
+        var bottom=floor(ink.minY*backing)/backing
+        if grounded, cel.supportOffset>0, let screenFloor {bottom=max(screenFloor,bottom)}
         frame=CGRect(x:left,y:bottom,width:ceil(ink.maxX*backing)/backing-left,
-                     height:ceil(ink.maxY*backing)/backing-bottom)
+                     height:ceil((ink.maxY+headroom)*backing)/backing-bottom)
         mapping.tx -= left;mapping.ty -= bottom
         transform=mapping
     }
-    func contains(_ p:CGPoint)->Bool {cel.contains(p.applying(transform.inverted()),height:image.height)}
+    func touchArea(at p:CGPoint)->TouchArea? {
+        guard contains(p) else {return nil}
+        let pixel=p.applying(transform.inverted())
+        let source=cel.original(CGPoint(x:pixel.x,y:CGFloat(image.height)-pixel.y))
+        let normalized=CGPoint(x:source.x/cel.sourceSize.width,y:source.y/cel.sourceSize.height)
+        return cel.touchLayout?.area(at:normalized) ?? .neutral
+    }
+    var headTop:CGPoint? {
+        guard let layout=cel.touchLayout else {return nil}
+        let p=cel.projected(CGPoint(x:layout.head.x*cel.sourceSize.width,
+                                    y:max(0,layout.head.y-layout.headRadius.y)*cel.sourceSize.height))
+        return CGPoint(x:p.x,y:CGFloat(image.height)-p.y).applying(transform)
+    }
+    func heart(progress:Double,unit:CGFloat,origin:CGPoint?=nil)->PetHeart? {
+        guard let top=origin ?? headTop else {return nil}
+        let size=clamp(unit*0.105,8,31)
+        return PetHeart(center:CGPoint(x:top.x+size*0.16*progress,y:top.y+size*(0.6+1.45*progress)),
+                        size:size*(0.78+0.22*min(1,progress*5)),opacity:0.92*min(1,(1-progress)*3))
+    }
+    func contains(_ p:CGPoint)->Bool {CGRect(origin:.zero,size:frame.size).contains(p) && cel.contains(p.applying(transform.inverted()),height:image.height)}
 }
 final class PetView:NSView {
     weak var pet:PetController?
     var drawing:SpriteDrawing?
+    var heart:PetHeart?
+    var eyelids:EyeDrawing?
     override var isOpaque:Bool {false}
     override func acceptsFirstMouse(for event:NSEvent?)->Bool {true}
     override func draw(_ dirtyRect:NSRect) {
@@ -141,11 +267,14 @@ final class PetView:NSView {
         cg.concatenate(drawing.transform)
         cg.interpolationQuality = .high
         let image=drawing.image
-        cg.draw(image,in:CGRect(x:0,y:0,width:image.width,height:image.height));cg.restoreGState()
+        cg.draw(image,in:CGRect(x:0,y:0,width:image.width,height:image.height))
+        if let centers=drawing.cel.eyeCenters {eyelids?.draw(in:cg,on:image,centers:centers)}
+        cg.restoreGState()
+        heart?.draw(in:cg)
     }
     override func mouseDown(with event:NSEvent) {
         let down=event.window?.convertPoint(toScreen:event.locationInWindow) ?? NSEvent.mouseLocation
-        pet?.press(at:down)
+        pet?.press(at:down,clickCount:event.clickCount)
     }
     override func mouseDragged(with event:NSEvent) {pet?.drag(to:NSEvent.mouseLocation)}
     override func mouseUp(with event:NSEvent) {pet?.release(at:NSEvent.mouseLocation)}

@@ -2,9 +2,8 @@ import AppKit
 
 enum Pose: Equatable {
     case changing, sitting, prone, side, loaf, sleepSide, sleepBack, sleepLoaf
-    case look, backLook, walking, hop, fall, carried, paw, swat, nip
+    case look, backLook, walking, hop, fall, carried
     var asleep:Bool { self == .sleepSide || self == .sleepBack || self == .sleepLoaf }
-    var striking:Bool { self == .paw || self == .swat || self == .nip }
 }
 final class PetController {
     let art:PetArt
@@ -19,24 +18,31 @@ final class PetController {
     private(set) var x:CGFloat=0, y:CGFloat=0
     private(set) var scale:CGFloat
     var base:CGFloat
-    var unit:CGFloat {(radius-2)/0.725}
+    var unit:CGFloat {(radius-2)/0.78}
     // All cels, including the extended swiping paw, fit this footprint.
     var radius:CGFloat {
         let terrain=surface.terrain
         let size=min(base*scale,terrain.screen.width*0.36,terrain.screen.height*0.51)
-        return terrain.fittingRadius(size*0.725+2)
+        return terrain.fittingRadius(size*0.78+2)
     }
     private var age:Double=0, duration:Double=0
     private var direction:CGFloat = -1
+    private var walkStart=0
+    private var brisk=false
+    private var walkRate:CGFloat {art.gait.speed*(brisk ? 1.85:1)}
+    private var enjoymentAt:Double?
+
     private var journey:DockMotion?, fallStart:CGFloat=0
     private var released:MotionFrame?
     private var pressurePoint:CGPoint?, lastDrag:CGPoint?, carriedPointer:CGPoint?
     private var draggedPress=false
     private var pickupBand=CGRect.zero
     private var reaction:Reaction?
-    private var queuedTouches:[(action:Pose,point:CGPoint)] = []
-    private var afterReaction:Pose = .sitting
-    private var lastClick = -100.0, clickCount=0
+    private var petting = PettingInput()
+    private var heartAge: Double?
+    private var heartOrigin = CGPoint.zero
+    private var blinkAge: Double?
+    private var shownLid: Int?
     private var lastTime=ProcessInfo.processInfo.systemUptime
     private var inspectAt=0.0, timer:Timer?
     private var arrival:(pose:Pose, duration:Double)?
@@ -97,14 +103,16 @@ final class PetController {
         render()
     }
     private func set(_ p:Pose,_ seconds:Double) {
-        arrival=nil
+        arrival=nil;enjoymentAt=nil
+        if p != .walking {walkStart=0}
+        if p != .walking && p != .hop && p != .changing {brisk=false}
         if p != .hop {journey=nil}
         reaction=nil
-        queuedTouches.removeAll()
+        if p == .carried || p == .fall || p == .hop {heartAge=nil;blinkAge=nil}
         pose=p;duration=seconds;age=0
     }
     // Both ends belong to the actual playing clips, including when a menu action interrupts a turn.
-    func change(to next:Pose, for seconds:Double, from initial:MotionFrame?=nil) {
+    func change(to next:Pose, for seconds:Double, from initial:MotionFrame?=nil, maximumFrameTime:Double = .infinity) {
         let end:MotionFrame
         switch next {
         case .walking,.hop: end=MotionFrame(art.cel("walk",0),direction>0)
@@ -114,9 +122,14 @@ final class PetController {
         default: end=neutralFrame(for:next)
         }
         let start=initial ?? MotionFrame(frame())
-        let route=motions.path(from:start,to:end)
+        if next == .walking {walkStart=0}
+        var route=motions.path(from:start,to:end)
+        if brisk && next == .walking && route.count>11 {
+            let authored=route
+            route=(0...10).map {authored[Int((Double($0*(authored.count-1))/10).rounded())]}
+        }
         if route.count==1 {set(next,seconds);return}
-        let sequence=Reaction(path:route)
+        let sequence=Reaction(path:route,maximumFrameTime:maximumFrameTime)
         set(.changing,sequence.duration)
         reaction=sequence
         arrival=(next,seconds)
@@ -136,7 +149,7 @@ final class PetController {
     }
     func sleepNow() {
         guard isGrounded else{return}
-        pressurePoint=nil
+        pressurePoint=nil;petting.cancelDrag();heartAge=nil;blinkAge=nil
         beginBackSleep()
         render()
     }
@@ -145,6 +158,7 @@ final class PetController {
         guard isGrounded else{return}
         let t=surface.terrain
         let initial=MotionFrame(frame())
+        brisk=false
         if let d=t.dock, towardDock || Int.random(in:0..<4) != 0 {
             if x < d.minX {direction=1}
             else if x>d.maxX {direction = -1}
@@ -154,7 +168,7 @@ final class PetController {
         let destination:CGFloat
         if let d=t.dock {destination=direction > 0 ? (x<d.minX ? d.minX:d.maxX) : (x>d.maxX ? d.maxX:d.minX)}
         else {destination=x}
-        let walkTime=towardDock ? min(120,max(6,Double(abs(destination-x)/(unit*art.temperament.walkSpeed))+5.0)) : .random(in:5...11)
+        let walkTime=towardDock ? min(120,max(6,Double(abs(destination-x)/(unit*art.gait.speed))+5.0)) : .random(in:5...11)
         change(to:.walking,for:walkTime,from:initial)
         render()
     }
@@ -164,17 +178,10 @@ final class PetController {
             if let arrival {set(arrival.pose,arrival.duration)}
         case .sitting: change(to:.prone,for:.random(in:4...9))
         case .walking: change(to:.sitting,for:1.4)
-        case .look: set(restShape,4.2)
+        case .look: set(restShape,restShape.asleep ? art.temperament.sleepTime:4.2)
         case .backLook: set(.sleepBack,.random(in:20...55))
-        case .paw,.swat,.nip:
-            let waiting=queuedTouches
-            set(afterReaction,afterReaction == .sitting ? 1.9:4.2)
-            if let next=waiting.first {
-                startReaction(next.action,at:next.point)
-                queuedTouches=Array(waiting.dropFirst())
-            }
         case .hop:
-            if let j=journey {x=j.hop.endX;y=j.hop.endY}
+            if let j=journey {x=j.hop.endX;y=j.hop.endY;walkStart=j.exitStride}
             journey=nil
             set(.walking,.random(in:2.4...5.2))
         case .fall:
@@ -188,15 +195,24 @@ final class PetController {
         case .loaf,.side,.prone: randomRest()
         }
     }
-    func press(at point:CGPoint) {
+    func press(at point:CGPoint,clickCount:Int=1) {
+        guard let draw=view.drawing else {return}
+        let local=CGPoint(x:point.x-draw.frame.minX,y:point.y-draw.frame.minY)
+        guard let area=draw.touchArea(at:local) else {return}
         pressurePoint=point;lastDrag=point;draggedPress=false
         pickupBand=panel.frame.insetBy(dx:-max(6,unit*0.07),dy:0)
+        if isGrounded, let response=petting.press(area,threshold:art.temperament.irritationThreshold,clickCount:clickCount) {
+            respond(response,at:point)
+        }
+        render()
     }
     func drag(to p:CGPoint) {
         guard let down=pressurePoint else{return}
         let previous=lastDrag ?? down
         lastDrag=p
-        if hypot(p.x-down.x,p.y-down.y)>=4 {draggedPress=true}
+        if !draggedPress && hypot(p.x-down.x,p.y-down.y)>=4 {
+            draggedPress=true;petting.cancelDrag()
+        }
         if pose != .carried {
             let first=art.cel("carry",0)
             let liftHeight=max(down.y+max(6,unit*0.045), y + first.gripHeight*first.scale*unit)
@@ -204,7 +220,7 @@ final class PetController {
             let crossing=clamp((liftHeight-previous.y)/(p.y-previous.y),0,1)
             let atX=previous.x+(p.x-previous.x)*crossing
             guard pickupBand.minX...pickupBand.maxX ~= atX else {return}
-            journey=nil;set(.carried,.infinity);clickCount=0
+            journey=nil;set(.carried,.infinity);petting.cancelDrag()
         }
         carriedPointer=p
         if !screen.frame.contains(p) {refreshScreen(at:p)}
@@ -234,27 +250,75 @@ final class PetController {
             released=MotionFrame(frame())
             fallStart=max(y,target);y=fallStart
             set(.fall,clamp(sqrt(max(0,fallStart-target)/800),0.18,1.2));render()
-        } else if !draggedPress {touch(at:down)}
+        } else if let response=petting.release(), isGrounded {
+            respond(response,at:down);render()
+        }
     }
-    func touch(at point:CGPoint,now:Double=ProcessInfo.processInfo.systemUptime) {
-        guard isGrounded else{return}
-        clickCount=now-lastClick<1.8 ? clickCount+1:1;lastClick=now
-        if clickCount<art.temperament.irritationThreshold && pose.asleep {
-            beginLook(hold:2.1)
-        } else {
-            let action:Pose=clickCount<art.temperament.irritationThreshold ? .paw : (clickCount.isMultiple(of:2) ? .nip:.swat)
-            if pose.striking {
-                if action != .paw {queuedTouches.removeAll {$0.action == .paw}}
-                if let index=queuedTouches.firstIndex(where:{$0.action==action}) {
-                    queuedTouches[index].point=point
-                } else if queuedTouches.count<2 {
-                    queuedTouches.append((action,point))
-                }
+
+    private func respond(_ response:TouchResponse,at point:CGPoint) {
+        let initial=MotionFrame(frame())
+        if response == .leave {
+            pressurePoint=nil;lastDrag=nil;heartAge=nil;blinkAge=nil
+            if pose == .backLook {
+                // A cat already facing away only has to lower its head.
+                change(to:.sleepBack,for:art.temperament.sleepTime,from:initial,maximumFrameTime:0.075)
             } else {
-                startReaction(action,at:point)
+                let terrain=surface.terrain
+                direction=point.x<x ? 1:-1
+                let ahead=terrain.bound(x+direction*unit*0.8,radius:radius)
+                if abs(ahead-x)<unit*0.3 {direction = -direction}
+                brisk=true
+                walkStart=0
+                change(to:.walking,for:1.45,from:initial,maximumFrameTime:0.037)
+            }
+            return
+        }
+        if response == .enjoy {enjoy(from:initial);return}
+        switch pose {
+        case .sleepBack:
+            play(.backLook,from:initial,toward:MotionFrame(art.cel("back",2)),home:initial,hold:0.36,frameTime:0.055)
+        case .side,.loaf,.sleepSide,.sleepLoaf:
+            restShape=pose
+            let key=(pose == .side || pose == .sleepSide) ? "side":"loaf"
+            let peak=pose.asleep ? 0:1
+            let home=MotionFrame(art.cel(key,pose.asleep ? 2:0))
+            play(.look,from:initial,toward:MotionFrame(art.cel(key,peak)),home:home,hold:0.24,frameTime:0.07)
+        case .prone where response == .notice:
+            restShape = .prone
+            play(.look,from:initial,toward:MotionFrame(art.cel("settle",7)),home:initial,hold:0.23,frameTime:0.07)
+        case .sitting,.prone:
+            blinkAge=0
+            duration=max(duration,age+0.65)
+        default: break
+        }
+    }
+    private func enjoy(from initial:MotionFrame) {
+        let rest=pose == .look ? restShape:pose
+        let peak,home:MotionFrame
+        let action:Pose
+        switch rest {
+        case .sleepBack,.backLook:
+            action = .backLook
+            peak=MotionFrame(art.cel("back",2));home=MotionFrame(art.cel("turn",5))
+        case .side,.sleepSide,.loaf,.sleepLoaf:
+            action = .look;restShape=rest
+            let key=(rest == .side || rest == .sleepSide) ? "side":"loaf"
+            peak=MotionFrame(art.cel(key,2));home=MotionFrame(art.cel(key,rest.asleep ? 2:0))
+        default:
+            action = .look
+            // Stop a walking cat in its current facing before its slow blink.
+            if rest == .walking {
+                restShape = .walking;peak=MotionFrame(art.cel("settle",0),initial.mirrored)
+                home=MotionFrame(art.cel("walk",0),initial.mirrored)
+            } else {
+                restShape = rest == .prone ? .prone:.sitting
+                home=neutralFrame(for:restShape);peak=home
             }
         }
-        render()
+        let sequence=Reaction(library:motions,from:initial,toward:peak,returningTo:home,hold:0.55,frameTime:0.045)
+        set(action,sequence.duration)
+        reaction=sequence;blinkAge=nil
+        enjoymentAt=sequence.peakTime
     }
     private func neutralFrame(for posture:Pose)->MotionFrame {
         switch posture {
@@ -264,8 +328,8 @@ final class PetController {
         default: return MotionFrame(art.cel("settle",0))
         }
     }
-    private func play(_ action:Pose,from initial:MotionFrame,toward peak:MotionFrame,home:MotionFrame,hold:Double?=nil) {
-        let sequence=Reaction(library:motions,from:initial,toward:peak,returningTo:home,action:action,hold:hold)
+    private func play(_ action:Pose,from initial:MotionFrame,toward peak:MotionFrame,home:MotionFrame,hold:Double,frameTime:Double=0.105) {
+        let sequence=Reaction(library:motions,from:initial,toward:peak,returningTo:home,hold:hold,frameTime:frameTime)
         set(action,sequence.duration)
         reaction=sequence
     }
@@ -280,23 +344,6 @@ final class PetController {
             play(.look,from:initial,toward:awake,home:awake,hold:hold)
         }
     }
-    private func startReaction(_ action:Pose,at point:CGPoint) {
-        let initial=MotionFrame(frame())
-        switch pose {
-        case .side,.loaf,.prone: afterReaction=pose
-        case .sleepSide: afterReaction = .side
-        case .sleepLoaf: afterReaction = .loaf
-        case .look: afterReaction=restShape
-        case .backLook,.sleepBack: afterReaction = .prone
-        case .changing:
-            afterReaction=motions.path(from:initial,to:neutralFrame(for:.sitting)).count<=5 ? .sitting:.prone
-        default: afterReaction = .sitting
-        }
-        let key=action == .paw ? "paw" : (action == .swat ? "swat":"nip")
-        let peak=motions.target(action:key,offset:CGPoint(x:point.x-x,y:point.y-y),unit:unit,
-                                from:initial,resting:afterReaction != .sitting)
-        play(action,from:initial,toward:peak,home:neutralFrame(for:afterReaction))
-    }
     private func tick() {
         let now=ProcessInfo.processInfo.systemUptime
         let dt=min(0.10,max(0,now-lastTime));lastTime=now
@@ -306,17 +353,26 @@ final class PetController {
         render()
     }
     func step(_ dt:Double) {
-        if pressurePoint != nil && isGrounded {return}
+        if let elapsed=heartAge {heartAge=elapsed+dt < 0.78 ? elapsed+dt:nil}
+        if let elapsed=blinkAge {blinkAge=elapsed+dt < 0.54 ? elapsed+dt:nil}
+        if let response=petting.advance(dt), let down=pressurePoint, isGrounded {respond(response,at:down)}
+        if draggedPress && pressurePoint != nil && isGrounded {return}
+        let previousAge=age
         age += dt
         let t=surface.terrain
         switch pose {
         case .carried: followHand()
         case .walking:
-            let next=t.bound(x+direction*unit*art.temperament.walkSpeed*dt,radius:radius)
+            let previous=art.gait.sample(time:previousAge,speed:walkRate,startingAt:walkStart)
+            let current=art.gait.sample(time:age,speed:walkRate,startingAt:walkStart)
+            let d=(current.distance-previous.distance)*unit
+            guard d>0 else {break}
+            let next=t.bound(x+direction*d,radius:radius)
             if let j=t.crossing(from:x,to:next,direction:direction,radius:radius,onDock:y>t.floor+3) {
-                let edge=direction>0 ? t.dock!.maxX:t.dock!.minX
-                let crossing=DockMotion(hop:j,edge:edge,unit:unit,art:art)
-                change(to:.hop,for:crossing.duration)
+                let dock=t.dock!
+                let edge=(direction>0) == j.descending ? dock.maxX:dock.minX
+                let crossing=DockMotion(hop:j,edge:edge,unit:unit,art:art,entryStride:previous.index)
+                set(.hop,crossing.duration)
                 journey=crossing
             } else {
                 let supported=t.landingX(near:next,radius:radius)
@@ -327,7 +383,7 @@ final class PetController {
             if let j=journey {
                 let p=j.position(age/duration)
                 x=p.x
-                y=j.hop.descending ? p.y:max(p.y,t.support(x,radius))
+                y=p.y
             }
         case .fall:
             let target=t.support(x,radius), f=min(1,age/duration)
@@ -351,7 +407,7 @@ final class PetController {
         case .sleepBack: (key,i)=("turn",5);flip=false
         case .backLook: (key,i)=("back",2);flip=false
         case .look: (key,i)=(restShape == .side ? "side":"loaf",age<0.15 ? 1:0);flip=false
-        case .walking:(key,i)=("walk",Int(age/0.19)%6);flip=direction>0
+        case .walking:(key,i)=("walk",art.gait.sample(time:age,speed:walkRate,startingAt:walkStart).index);flip=direction>0
         case .hop:
             return (journey!.frame(age/duration),direction>0)
         case .fall:
@@ -359,14 +415,7 @@ final class PetController {
             if t<0.09, let released {return (released.cel,released.mirrored)}
             (key,i)=("release",min(3,Int(t*4)));flip=false
         case .carried:(key,i)=("carry",[0,1,2,1][Int(age/0.3)%4]);flip=false
-        case .paw,.swat,.nip:
-            switch afterReaction {
-            case .prone: (key,i)=("settle",8)
-            case .side: (key,i)=("side",0)
-            case .loaf: (key,i)=("loaf",0)
-            default: (key,i)=("settle",0)
-            }
-            flip=false
+
         }
         return (art.cel(key,i),flip)
     }
@@ -374,12 +423,30 @@ final class PetController {
         let (cel,flip)=frame()
         let k=unit*cel.scale
         let breath=(pose == .sleepSide || pose == .sleepLoaf) ? 1+0.009*sin(age*2*Double.pi/4.7):1
-        let grounded=isGrounded || (pose == .hop && journey?.hop.descending == true) || (pose != .carried && y<=surface.terrain.support(x,radius)+0.001)
+        let grounded=isGrounded || pose == .hop || (pose != .carried && y<=surface.terrain.support(x,radius)+0.001)
+        if let onset=enjoymentAt,age>=onset {
+            let placement=SpriteDrawing(cel:cel,grounded:grounded,mirror:flip,feet:CGPoint(x:x,y:y),k:k,stretch:breath,backing:screen.backingScaleFactor,screenFloor:surface.terrain.floor)
+            if let head=placement.headTop {
+                heartOrigin=CGPoint(x:placement.frame.minX+head.x,y:placement.frame.minY+head.y)
+                heartAge=0
+                if cel.eyeCenters != nil {blinkAge=0}
+            }
+            enjoymentAt=nil
+        }
+        let lean=heartAge.map {1-0.024*pow(sin(.pi*min(1,$0/0.58)),2)} ?? 1
         let draw=SpriteDrawing(cel:cel,grounded:grounded,mirror:flip,feet:CGPoint(x:x,y:y),
-                               k:k,stretch:breath,backing:screen.backingScaleFactor)
+                               k:k,stretch:breath*lean,backing:screen.backingScaleFactor,
+                               headroom:heartAge == nil ? 0:clamp(unit*0.105,8,31)*2.65,screenFloor:surface.terrain.floor)
         let rect=draw.frame
-        let redraw=view.drawing?.cel !== cel || view.drawing?.transform != draw.transform ||
+        let origin=CGPoint(x:heartOrigin.x-rect.minX,y:heartOrigin.y-rect.minY)
+        let heart=heartAge.flatMap { draw.heart(progress:$0/0.78,unit:unit,origin:origin) }
+        let lid=blinkAge.flatMap { elapsed -> Int? in
+            guard cel.eyeCenters != nil, art.eyelids.count==2 else {return nil}
+            return elapsed<0.07 || elapsed>0.44 ? 0:1
+        }
+        let redraw=heart != view.heart || lid != shownLid || view.drawing?.cel !== cel || view.drawing?.transform != draw.transform ||
                    view.drawing?.grounded != grounded || rect.size != panel.frame.size
+        view.heart=heart;view.eyelids=lid.map {art.eyelids[$0]};shownLid=lid
         view.drawing=draw
         if rect != panel.frame {panel.setFrame(rect,display:false)}
         if redraw {view.needsDisplay=true}

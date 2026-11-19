@@ -15,10 +15,8 @@ struct MotionFrame: Hashable {
 
 final class MotionLibrary {
     private var adjacent: [MotionFrame: [MotionFrame]] = [:]
-    private let art: PetArt
 
     init(_ art: PetArt) {
-        self.art = art
         for flip in [false, true] {
             func connect(_ cels: [Cel], turning: Bool = false) {
                 let frames = cels.enumerated().map { i, cel in
@@ -57,28 +55,7 @@ final class MotionLibrary {
         return route.reversed()
     }
 
-    func target(action: String, offset: CGPoint, unit: CGFloat, from initial: MotionFrame, resting: Bool) -> MotionFrame {
-        let side = art.cel(action,1)
-        let restingFrames = art.clips[action + "Rest"] ?? []
-        let useRestingFrames = resting && !restingFrames.isEmpty
-        let options = useRestingFrames ? restingFrames : (art.clips[action + "Aim"] ?? []) + [side]
-        let orientations = resting ? [initial.mirrored] : [false, true]
-        var winner = MotionFrame(options[0],initial.mirrored), best = CGFloat.infinity
-        for cel in options {
-            guard let tip = cel.contact else { continue }
-            let k = unit * cel.scale
-            for flip in orientations {
-                let x = (tip.x-cel.anchorX)*k*(flip ? -1:1)
-                let distance = hypot(x-offset.x, tip.y*k-offset.y)
-                let score = distance + (flip != initial.mirrored ? 0.045*unit:0)
-                if score < best {
-                    winner = MotionFrame(cel,flip)
-                    best = score
-                }
-            }
-        }
-        return winner
-    }
+
 }
 
 struct Reaction {
@@ -87,41 +64,28 @@ struct Reaction {
         let end: Double
     }
     private var beats: [Beat] = []
+    private(set) var peakTime:Double=0
     var duration: Double { beats.last!.end }
 
-    init(path: [MotionFrame]) {
+    init(path: [MotionFrame], maximumFrameTime: Double = .infinity) {
         var time=0.0
         for frame in path {
-            time += frame.cel.seconds ?? 0.145
+            time += min(frame.cel.seconds ?? 0.145, maximumFrameTime)
             beats.append(Beat(frame:frame,end:time))
         }
     }
 
     init(library: MotionLibrary, from initial: MotionFrame, toward peak: MotionFrame,
-         returningTo home: MotionFrame, action: Pose, hold: Double? = nil) {
-        let approach = library.path(from:initial,to:peak)
-        let recovery = library.path(from:peak,to:home)
-        // The paw hesitates before reaching. The swat accelerates into contact.
-        let forward: [Double]
-        let contactTime: Double
-        switch action {
-        case .swat: forward = [0.12,0.085,0.060,0.045]; contactTime = 0.105
-        case .nip: forward = [0.105,0.095,0.070,0.060]; contactTime = 0.14
-        case .paw: forward = [0.13,0.12,0.10,0.085]; contactTime = 0.20
-        default: forward = [0.10,0.105,0.115,0.13]; contactTime = 1.7
+         returningTo home: MotionFrame, hold: Double, frameTime: Double = 0.105) {
+        var elapsed=0.0
+        func append(_ frame:MotionFrame,_ seconds:Double) {
+            elapsed += seconds
+            beats.append(Beat(frame:frame,end:elapsed))
         }
-        func append(_ frame: MotionFrame, _ seconds: Double) {
-            beats.append(Beat(frame:frame,end:(beats.last?.end ?? 0)+max(seconds,frame.cel.seconds ?? 0)))
-        }
-        for (i,frame) in approach.dropLast().enumerated() {
-            let remaining = approach.count-1-i
-            append(frame,remaining > forward.count ? 0.075 : forward[forward.count-remaining])
-        }
-        append(peak,hold ?? contactTime)
-        let release = [0.075,0.095,0.115,0.14]
-        for (i,frame) in recovery.dropFirst().enumerated() {
-            append(frame,i < release.count ? release[i] : 0.08)
-        }
+        for frame in library.path(from:initial,to:peak).dropLast() {append(frame,frameTime)}
+        peakTime=elapsed
+        append(peak,hold)
+        for frame in library.path(from:peak,to:home).dropFirst() {append(frame,frameTime)}
     }
 
     func frame(at elapsed: Double) -> (Cel, Bool) {

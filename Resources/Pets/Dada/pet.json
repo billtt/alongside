@@ -1,5 +1,118 @@
 {
   "name": "达达",
+  "levelView": {
+    "restingContacts": {
+      "prone": {"body": [0.37, 0.755], "overhang": 0.026},
+      "rightProne": {"body": [0.245, 0.63], "overhang": 0.026},
+      "loaf": {"body": [0.55, 0.88], "overhang": 0.019},
+      "side": {"body": [0.57, 0.81], "overhang": 0.021},
+      "seated": {"body": [0.52, 0.75], "overhang": 0.019},
+      "front": {"body": [0.52, 0.78], "overhang": 0.019},
+      "rear": {"body": [0.16, 0.37], "overhang": 0.023},
+      "quarterRear": {"body": [0.19, 0.4], "overhang": 0.021}
+    },
+    "profiles": {
+      "loaf": [[0, 0, 0], [0.46, 0, 0], [0.68, 0.085, 0.88], [0.82, 0.128, 1], [0.91, 0.14, 1], [1, 0.14, 1]],
+      "prone": [[0, 0, 0], [0.39, 0, 0], [0.59, 0.065, 0], [0.83, 0.108, 1], [0.91, 0.106, 1], [1, 0.098, 0.7]],
+      "side": [[0, 0, 0], [0.29, 0, 0], [0.49, 0.042, 0], [0.73, 0.082, 0.75], [0.84, 0.087, 0.88], [0.935, 0.073, 0.9], [1, 0.068, 0.9]],
+      "seated": [[0, 0, 0], [0.4, 0, 0], [0.64, 0.026, 0], [0.8, 0.052, 1], [0.91, 0.056, 0.85], [1, 0.05, 0.75]],
+      "front": [[0, 0.018, 0.75], [0.16, 0.018, 0.92], [0.34, 0, 0], [0.66, 0, 0], [0.82, 0.033, 0.9], [1, 0.033, 0.9]],
+      "rear": [[0, 0.075, 0], [0.3, 0.075, 0], [0.72, 0.075, 0], [1, 0.066, 0]],
+      "quarterRear": [[0, 0.047, 0], [0.32, 0.046, 0], [0.71, 0.076, 0.4], [0.88, 0.078, 0.8], [1, 0.075, 0.4]],
+      "rightProne": [[0, 0.098, 0.7], [0.09, 0.106, 1], [0.17, 0.108, 1], [0.41, 0.065, 0], [0.61, 0, 0], [1, 0, 0]],
+      "stride": [[0, 0, 0], [0.25, 0, 0], [0.47, 0.029, 0], [0.68, 0.043, 0], [0.84, 0.038, 0], [1, 0.022, 0]],
+      "away": [[0, 0.025, 0], [0.28, 0.025, 0], [0.65, 0.055, 0], [0.84, 0.052, 0], [1, 0.043, 0]],
+      "flight": [[0, 0, 0], [0.27, 0, 0], [0.56, 0.024, 0], [0.82, 0.032, 0], [1, 0.023, 0]],
+      "hanging": [],
+      "stridePlant": [[0, 0, 0], [0.042, 0, 1], [0.105, 0, 0], [0.25, 0, 0], [0.47, 0.029, 0], [0.68, 0.043, 0], [0.84, 0.038, 0], [1, 0.022, 0]]
+    },
+    "clips": {
+      "side": ["side"],
+      "back": ["rear"],
+      "loaf": ["loaf"],
+      "paw": ["seated"],
+      "swat": ["seated"],
+      "nip": ["seated"],
+      "walk": ["stridePlant", "stride", "stride", "stride", "stride", "stride"],
+      "leap": ["seated", "flight", "stride"],
+      "carry": ["hanging"],
+      "settle": ["seated", "seated", "seated", "seated", "seated", "prone", "prone", "prone", "prone"],
+      "turn": ["prone", "prone", "side", "quarterRear", "rear", "rear"],
+      "pawAim": ["front"],
+      "swatAim": ["front"],
+      "nipAim": ["front"],
+      "pawRest": ["prone"],
+      "swatRest": ["prone"],
+      "nipRest": ["prone"],
+      "motion-paw-low": ["seated", "front", "front", "front"],
+      "motion-swat-low": ["seated", "front", "front", "front"],
+      "motion-nip-low": ["seated", "front", "front", "front"],
+      "motion-paw-mid": ["seated", "front", "front", "front"],
+      "motion-swat-mid": ["seated", "front", "front", "front"],
+      "motion-nip-mid": ["seated", "front", "front", "front"],
+      "motion-paw-high": ["seated", "front", "front", "front"],
+      "motion-swat-high": ["seated", "front", "front", "front"],
+      "motion-nip-high": ["seated", "front", "front", "front"],
+      "motion-paw-side": ["seated", "seated", "seated", "seated"],
+      "motion-swat-side": ["seated", "seated", "seated", "seated"],
+      "motion-nip-side": ["seated", "seated", "seated", "seated"],
+      "motion-paw-rest": ["prone"],
+      "motion-swat-rest": ["prone"],
+      "motion-nip-rest": ["prone"],
+      "motion-side-prone": ["side", "side", "prone", "prone"],
+      "motion-loaf-prone": ["loaf", "loaf", "prone", "prone"],
+      "motion-walk-sit": ["stride", "stride", "seated", "seated"],
+      "motion-back-wake": ["rear"],
+      "motion-sit-turn": ["seated"],
+      "motion-prone-turn": ["prone", "prone", "prone", "rightProne"],
+      "motion-paw-flank": ["prone"],
+      "motion-swat-flank": ["prone"],
+      "motion-nip-flank": ["prone"],
+      "standTurn": ["prone", "prone", "seated", "stride", "stride", "stride", "stride", "away", "away", "away", "away", "away", "quarterRear", "rear"],
+      "stepDown": ["stride"],
+      "hopUp": ["stride", "stride", "stride", "flight", "flight", "flight", "stride", "stride"],
+      "release": ["hanging", "flight", "flight", "stride"],
+      "sitToStand": ["seated", "seated", "seated", "stride"],
+      "walkToTurn": ["stride"]
+    }
+  },
+  "touchLayouts": {
+    "sit": {"head": [0.33, 0.21], "headRadius": [0.29, 0.23], "back": [[0.5, 0.24], [0.92, 0.35], [0.94, 0.71], [0.65, 0.64], [0.48, 0.44]], "sensitive": [[0.01, 0.6], [0.57, 0.55], [0.83, 0.75], [0.78, 1], [0, 1]]},
+    "prone": {"head": [0.25, 0.32], "headRadius": [0.22, 0.34], "back": [[0.39, 0.22], [0.71, 0.16], [0.97, 0.41], [0.94, 0.65], [0.73, 0.65], [0.4, 0.51]], "sensitive": [[0, 0.82], [0.34, 0.71], [0.61, 0.69], [0.86, 0.64], [0.88, 0.91], [0.63, 1], [0, 1]]},
+    "loaf": {"head": [0.3, 0.25], "headRadius": [0.26, 0.29], "back": [[0.47, 0.23], [0.74, 0.2], [0.97, 0.45], [0.95, 0.69], [0.69, 0.6], [0.5, 0.47]], "sensitive": [[0, 0.84], [0.32, 0.72], [0.64, 0.69], [0.88, 0.77], [0.91, 1], [0, 1]]},
+    "side": {"head": [0.18, 0.59], "headRadius": [0.2, 0.39], "back": [[0.18, 0.13], [0.57, 0], [0.82, 0.18], [0.91, 0.5], [0.7, 0.58], [0.35, 0.47]], "sensitive": [[0.3, 0.69], [0.5, 0.52], [0.71, 0.55], [0.83, 0.7], [0.75, 0.98], [0.28, 1]]},
+    "walk": {"head": [0.13, 0.27], "headRadius": [0.16, 0.31], "back": [[0.22, 0.15], [0.66, 0.02], [0.81, 0.2], [0.81, 0.46], [0.5, 0.4], [0.25, 0.44]], "sensitive": [[0, 0.61], [0.29, 0.48], [0.67, 0.46], [0.83, 0.61], [0.81, 1], [0, 1]]},
+    "rearStand": {"head": [0.23, 0.18], "headRadius": [0.19, 0.22], "back": [[0.12, 0.16], [0.63, 0.06], [0.83, 0.4], [0.76, 0.66], [0.33, 0.68], [0.14, 0.43]], "sensitive": [[0.01, 0.78], [0.59, 0.66], [0.76, 0.79], [0.74, 1], [0.01, 1]]},
+    "rear": {"head": [0.37, 0.17], "headRadius": [0.18, 0.22], "back": [[0.04, 0.27], [0.53, 0.16], [0.88, 0.29], [0.99, 0.61], [0.83, 0.76], [0.49, 0.76], [0.04, 0.9]], "sensitive": []},
+    "glance": {"head": [0.54, 0.23], "headRadius": [0.23, 0.26], "back": [[0.07, 0.34], [0.46, 0.25], [0.83, 0.42], [0.98, 0.72], [0.78, 0.81], [0.31, 0.77], [0.02, 0.88]], "sensitive": []}
+  },
+  "clipLayouts": {
+    "side": ["side"],
+    "loaf": ["loaf"],
+    "walk": ["walk"],
+    "back": ["glance"],
+    "turn": ["rear"],
+    "settle": ["sit", "sit", "sit", "sit", "loaf", "loaf", "prone", "prone", "prone"],
+    "standTurn": ["prone", "prone", "loaf", "walk", "walk", "walk", "walk", "rearStand", "rearStand", "rearStand", "rearStand", "rearStand", "rear", "rear"],
+    "sitToStand": ["sit", "sit", "loaf", "walk"],
+    "walkToTurn": ["walk"],
+    "motion-back-wake": ["rear", "rear", "glance", "glance"],
+    "motion-walk-sit": ["walk", "walk", "loaf", "sit"],
+    "motion-loaf-prone": ["loaf", "loaf", "prone", "prone"],
+    "motion-side-prone": ["side", "side", "prone", "prone"],
+    "motion-sit-turn": ["sit"]
+  },
+  "clipScale": {
+    "walk": [1.115],
+    "motion-walk-sit": [1.115, 1.09, 1.035, 1.0],
+    "standTurn": [1.0, 1.02, 1.045, 1.065, 1.08, 1.085, 1.085, 1.085, 1.08, 1.074, 1.065, 1.05, 1.033, 1.015],
+    "stepDown": [1.065],
+    "hopUp": [1.11, 1.13, 1.18, 1.18, 1.14, 1.16, 1.16, 1.13],
+    "sitToStand": [1.0, 1.015, 1.035, 1.065],
+    "walkToTurn": [1.115, 1.107, 1.097, 1.085]
+  },
+  "gaitSpeed": 0.72,
+  "walkContacts": [[23, 39], [39, 62], [62, 132], [301, 326], [326, 355], [136, 209]],
   "clips": {
     "side": [
       {
@@ -31,6 +144,7 @@
       },
       {
         "file": "back-2.png",
+        "eyeCenters": [[268, 95]],
         "unitsPerPixel": 0.0022727272727272726,
         "anchorX": 199.0
       }
@@ -43,11 +157,13 @@
       },
       {
         "file": "loaf-1.png",
+        "eyeCenters": [[80, 114], [150, 114]],
         "unitsPerPixel": 0.002077295,
         "anchorX": 190.0
       },
       {
         "file": "loaf-2.png",
+        "eyeCenters": [[77, 116], [150, 116]],
         "unitsPerPixel": 0.002077295,
         "anchorX": 190.5
       }
@@ -187,6 +303,7 @@
     "settle": [
       {
         "file": "settle-0.png",
+        "eyeCenters": [[69, 72], [122, 72]],
         "unitsPerPixel": 0.0026954177897574125,
         "anchorX": 108.0
       },
@@ -227,6 +344,7 @@
       },
       {
         "file": "settle-8.png",
+        "eyeCenters": [[66, 75], [120, 75]],
         "unitsPerPixel": 0.0026954177897574125,
         "anchorX": 200.0
       }
@@ -797,6 +915,7 @@
       },
       {
         "file": "Motion/walk-sit-2.png",
+        "restingWeight": 0.55,
         "unitsPerPixel": 0.003816638,
         "anchorX": 134.458
       },
@@ -932,12 +1051,14 @@
       },
       {
         "file": "Motion/stand-turn-2.png",
+        "restingWeight": 0.78,
         "unitsPerPixel": 0.003234727,
         "anchorX": 155.437,
         "seconds": 0.26
       },
       {
         "file": "Motion/stand-turn-3.png",
+        "restingWeight": 0.45,
         "unitsPerPixel": 0.003234727,
         "anchorX": 170.781,
         "seconds": 0.29
@@ -998,6 +1119,7 @@
       },
       {
         "file": "Motion/stand-turn-13.png",
+        "restingWeight": 0.55,
         "unitsPerPixel": 0.002903509,
         "anchorX": 115.5,
         "seconds": 0.3
@@ -1017,56 +1139,67 @@
       },
       {
         "file": "Motion/step-down-1.png",
+        "pitchDegrees": 4,
         "unitsPerPixel": 0.003187348,
         "anchorX": 200.5
       },
       {
         "file": "Motion/step-down-2.png",
+        "pitchDegrees": 10,
         "unitsPerPixel": 0.003187348,
         "anchorX": 203.5
       },
       {
         "file": "Motion/step-down-3.png",
+        "pitchDegrees": 17,
         "unitsPerPixel": 0.003187348,
         "anchorX": 205.0
       },
       {
         "file": "Motion/step-down-4.png",
+        "pitchDegrees": 23,
         "unitsPerPixel": 0.003187348,
         "anchorX": 205.0
       },
       {
         "file": "Motion/step-down-5.png",
+        "pitchDegrees": 24,
         "unitsPerPixel": 0.003187348,
         "anchorX": 207.5
       },
       {
         "file": "Motion/step-down-6.png",
+        "pitchDegrees": 27,
         "unitsPerPixel": 0.003187348,
         "anchorX": 207.5
       },
       {
         "file": "Motion/step-down-7.png",
+        "pitchDegrees": 29,
         "unitsPerPixel": 0.003187348,
         "anchorX": 209.5
       },
       {
         "file": "Motion/step-down-8.png",
+        "pitchDegrees": 26,
         "unitsPerPixel": 0.003187348,
         "anchorX": 211.0
       },
       {
         "file": "Motion/step-down-9.png",
+        "pitchDegrees": 19,
         "unitsPerPixel": 0.003187348,
         "anchorX": 208.5
       },
       {
         "file": "Motion/step-down-10.png",
+        "pitchDegrees": 10,
         "unitsPerPixel": 0.003187348,
         "anchorX": 207.0
       },
       {
         "file": "Motion/step-down-11.png",
+        "pitchDegrees": 3,
         "unitsPerPixel": 0.003187348,
         "anchorX": 211.0
       }
@@ -1150,6 +1283,7 @@
       },
       {
         "file": "Motion/sitToStand-2.png",
+        "restingWeight": 0.5,
         "unitsPerPixel": 0.002647887,
         "anchorX": 165.075,
         "seconds": 0.155

@@ -11,8 +11,16 @@ for arch in arm64 x86_64; do
 done
 lipo -create "$stage/arm64" "$stage/x86_64" -output "$bundle/Contents/MacOS/Alongside"
 cp Resources/Info.plist "$bundle/Contents/"
-cp -R Resources/Pets "$bundle/Contents/Resources/"
+for pet in Resources/Pets/*; do
+  dest="$bundle/Contents/Resources/Pets/${pet##*/}"
+  mkdir -p "$dest"
+  rsync -a --exclude=/Rig/ --exclude=.DS_Store "$pet/" "$dest/"
+done
 cp Resources/Alongside.icns "$bundle/Contents/Resources/"
 codesign --force --sign - "$bundle"
 codesign --verify --deep --strict "$bundle"
-ditto "$bundle" dist/Alongside.app
+ditto -c -k --norsrc --noextattr --keepParent "$bundle" "$stage/Alongside-macOS.zip"
+# Synchronize the complete signed bundle, including removal of resources from older builds.
+rsync -a --delete "$bundle/" dist/Alongside.app/
+codesign --verify --deep --strict dist/Alongside.app
+mv -f "$stage/Alongside-macOS.zip" dist/Alongside-macOS.zip
