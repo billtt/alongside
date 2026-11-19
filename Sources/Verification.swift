@@ -232,8 +232,34 @@ func verifyApp() throws {
         try require(gestures.pose==target && previous==MotionFrame(gestures.frame()),"终止帧接入静止姿势")
         if target == .sleepBack || first.cel === art.cel("turn",5) {
             let turning=visited.filter { f in art.clips["standTurn"]!.contains(where:{$0 === f.cel}) }
-            try require(turning.count==14 && elapsed>3.5,"撑身、前后爪换步、下蹲和收爪均有停留")
+            try require(turning.count==14 && elapsed>2.2,"撑身、前后爪换步、下蹲和收爪均有停留")
         }
+    }
+    for (nap,key) in [(Pose.sleepLoaf,"loaf"),(.sleepSide,"side"),(.sleepBack,"back")] {
+        let cat=PetController(art:art,screen:screen)
+        cat.change(to:nap,for:art.temperament.sleepTime)
+        try waitFor(cat,nap)
+        cat.step(600);cat.render()
+        try require(cat.pose==nap,"十分钟后仍在同一睡姿")
+        let p=try pointOn(cat,.head)
+        cat.press(at:p);cat.release(at:p)
+        for _ in 0..<9 {cat.step(1/30)}
+        let peak=art.cel(key,key=="back" ? 2:0)
+        try require(cat.frame().0 === peak,"睁眼或回头及时响应")
+        for _ in 0..<90 {cat.step(1/30)}
+        try require(cat.frame().0 === peak,"唤醒三秒后仍在看")
+        let p1=try pointOn(cat,.head)
+        cat.press(at:p1);cat.release(at:p1);cat.step(0.10)
+        let p2=try pointOn(cat,.head)
+        cat.press(at:p2,clickCount:2);cat.release(at:p2)
+        for _ in 0..<32 {cat.step(1/30);cat.render()}
+        try require(cat.frame().0 === peak,"双击享受之后继续睁眼")
+        for count in 1...3 {
+            let p=try pointOn(cat,.head)
+            cat.press(at:p,clickCount:count);cat.release(at:p);cat.step(0.09)
+        }
+        try require(cat.pose == .changing,"打扰睡眠后起身")
+        try waitFor(cat,.walking)
     }
     print("Verified",art.clips.values.reduce(0){$0+$1.count},"cels,",art.transitions.count,"motion tracks; petting, recovery, burst input, ground ink, grip and Dock")
 }
@@ -290,10 +316,28 @@ func verifyPetting(_ art: PetArt) throws {
     }
     try check(art.eyelids.count==2 && art.cel("settle",0).eyeCenters?.count==2 && art.cel("settle",8).eyeCenters?.count==2,"坐卧眯眼原画")
     let rest=MotionFrame(art.cel("turn",5)), glance=MotionFrame(art.cel("back",2))
-    let sequence=Reaction(library:MotionLibrary(art),from:rest,toward:glance,returningTo:rest,hold:0.36,frameTime:0.055)
+    let sequence=Reaction(library:MotionLibrary(art),from:rest,toward:glance,returningTo:rest,hold:4.5,frameTime:0.055)
     try check(MotionFrame(sequence.frame(at:0))==rest && MotionFrame(sequence.frame(at:0.06)) != rest &&
               MotionFrame(sequence.frame(at:0.30))==glance && MotionFrame(sequence.frame(at:sequence.duration))==rest &&
-              sequence.duration<1,"背睡短回头的起势、顶点和收势")
+              MotionFrame(sequence.frame(at:4))==glance,"背睡回头保持清醒再收势")
+    try check((art.temperament.restDuration?.first ?? 0)>=600 && art.temperament.sleepDuration[0]>=600,"安静休息时长")
+    for key in ["loaf","side","turn"] {
+        let cel=art.cel(key,key=="turn" ? 5:2)
+        guard let sleep=cel.sleeping else {throw ArtError.invalid("睡姿微动 "+key)}
+        let inhale=SleepPhase(age:1.85,twitchStart:.infinity)
+        let shifted=sleep.image(at:inhale)
+        let row=shifted.bytesPerRow, h=shifted.height
+        let a=NSBitmapImageRep(cgImage:sleep.image(at:SleepPhase(age:0,twitchStart:.infinity)))
+        let b=NSBitmapImageRep(cgImage:shifted)
+        try check(row>0 && a.bytesPerRow==b.bytesPerRow,"相同画幅")
+        let rgb0=a.bitmapData!, rgb1=b.bitmapData!, stride=a.bytesPerRow
+        try check(memcmp(rgb0,rgb1,stride*h) != 0 && memcmp(rgb0+(h-8)*stride,rgb1+(h-8)*stride,8*stride)==0,"呼吸时胸背起伏、承重轮廓不动 "+key)
+        if key != "turn" {
+            let t=SleepPhase(age:1.85,twitchStart:1.77)
+            let c=NSBitmapImageRep(cgImage:sleep.image(at:t))
+            try check(memcmp(rgb1,c.bitmapData!,stride*h) != 0,"可见胡须有独立微动 "+key)
+        }
+    }
     print("已验证抚摸区域、镜像和缩放、双击、长按、连续点击、拖动取消、爱心和背睡回头。")
 }
 
@@ -349,6 +393,33 @@ func verifyLocomotion(_ art:PetArt) throws {
                 try require(dock.frame.minY<feet.y && dock.contains(pixel.applying(dock.transform)) &&
                             floor.frame.minY==feet.y && !floor.contains(pixel.applying(floor.transform)),"台沿外伸、屏幕底边与点击位置")
             }
+        }
+    }
+    let library=MotionLibrary(art)
+    for track in art.transitions {
+        guard let pairs=track.paws else {continue}
+        for mirror in [false,true] {
+            let route=track.frames.map {MotionFrame($0,mirror)}
+            for (i,toes) in pairs.enumerated() {
+                let a=route[i],b=route[i+1], dx=library.step(from:a,to:b)
+                func foot(_ cel:Cel,_ u:CGFloat)->CGFloat {
+                    (CGFloat(cel.image.width)*u-cel.anchorX)*cel.scale*(mirror ? -1:1)
+                }
+                try require(abs(foot(a.cel,toes[0])-foot(b.cel,toes[1])-dx)<0.00001 &&
+                            abs(dx+library.step(from:b,to:a))<0.00001,"转身正反播放支撑爪停在同一点")
+            }
+            for (i,toes) in pairs.enumerated() {
+                for (index,u) in [(i,toes[0]),(i+1,toes[1])] {
+                    let cel=route[index].cel, im=cel.groundedImage
+                    let mask=NSBitmapImageRep(cgImage:im)
+                    let x=Int(u*CGFloat(im.width)),r=max(2,Int(CGFloat(im.width)*0.017))
+                    let y=min(im.height-1,Int(CGFloat(im.height)-cel.supportOffset)-1)
+                    let count=(x-r...x+r).filter {(mask.colorAt(x:$0,y:y)?.alphaComponent ?? 0)>0.6}.count
+                    try require(count>=3,"转身承重爪离开台面：第 \(index) 帧")
+                }
+            }
+            let sequence=Reaction(library:library,path:route)
+            try require(abs(sequence.travel(at:sequence.duration))>0.12,"换步时重心离开起点")
         }
     }
     let gait=art.gait, speed=art.gait.speed

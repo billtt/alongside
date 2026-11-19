@@ -48,6 +48,13 @@ struct Terrain: Equatable {
         if let top {candidates.append(top)}
         return candidates.min {abs($0-x)<abs($1-x)} ?? bound(dock.midX,radius:radius)
     }
+    // A stance change stays on the same surface, even at the lip of a narrow Dock.
+    func turnX(from x:CGFloat,delta:CGFloat,radius:CGFloat,onDock:Bool)->CGFloat {
+        let next=bound(x+delta,radius:radius)
+        guard let dock else {return next}
+        if onDock, let top=dockStandingRange(radius:radius) {return clamp(next,top.lowerBound,top.upperBound)}
+        return x<=dock.midX ? min(next,dock.minX-radius):max(next,dock.maxX+radius)
+    }
     // Returns a takeoff/landing pair. All coordinates are AppKit screen points.
     func crossing(from x: CGFloat, to next: CGFloat, direction: CGFloat, radius: CGFloat, onDock: Bool) -> Hop? {
         guard let dock, let top=dockStandingRange(radius:radius) else { return nil }

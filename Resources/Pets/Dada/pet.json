@@ -127,6 +127,7 @@
       },
       {
         "file": "side-2.png",
+        "sleepDrawing": {"chestX":0.58,"chestRadius":0.40,"whiskerTips":[[0.13,0.90],[0.32,0.77]]},
         "unitsPerPixel": 0.002857142857142857,
         "anchorX": 198.5
       }
@@ -163,6 +164,7 @@
       },
       {
         "file": "loaf-2.png",
+        "sleepDrawing": {"chestX":0.73,"chestRadius":0.38,"whiskerTips":[[0.13,0.55],[0.48,0.55]]},
         "eyeCenters": [[77, 116], [150, 116]],
         "unitsPerPixel": 0.002077295,
         "anchorX": 190.5
@@ -377,6 +379,7 @@
       },
       {
         "file": "turn-5.png",
+        "sleepDrawing": {"chestX":0.56,"chestRadius":0.65,"whiskerTips":[]},
         "unitsPerPixel": 0.0017241379310344827,
         "anchorX": 258.5
       }
@@ -1047,88 +1050,88 @@
         "file": "Motion/stand-turn-1.png",
         "unitsPerPixel": 0.003234727,
         "anchorX": 169.216,
-        "seconds": 0.22
+        "seconds": 0.18
       },
       {
         "file": "Motion/stand-turn-2.png",
         "restingWeight": 0.78,
         "unitsPerPixel": 0.003234727,
         "anchorX": 155.437,
-        "seconds": 0.26
+        "seconds": 0.2
       },
       {
         "file": "Motion/stand-turn-3.png",
         "restingWeight": 0.45,
         "unitsPerPixel": 0.003234727,
         "anchorX": 170.781,
-        "seconds": 0.29
+        "seconds": 0.16
       },
       {
         "file": "Motion/stand-turn-4.png",
         "unitsPerPixel": 0.003234727,
         "anchorX": 168.898,
-        "seconds": 0.2
+        "seconds": 0.13
       },
       {
         "file": "Motion/stand-turn-5.png",
         "unitsPerPixel": 0.003234727,
         "anchorX": 168.0,
-        "seconds": 0.25
+        "seconds": 0.15
       },
       {
         "file": "Motion/stand-turn-6.png",
         "unitsPerPixel": 0.003234727,
         "anchorX": 179.5,
-        "seconds": 0.2
+        "seconds": 0.135
       },
       {
         "file": "Motion/stand-turn-7.png",
         "unitsPerPixel": 0.003234727,
         "anchorX": 167.5,
-        "seconds": 0.25
+        "seconds": 0.155
       },
       {
         "file": "Motion/stand-turn-8.png",
         "unitsPerPixel": 0.003179524,
         "anchorX": 145.5,
-        "seconds": 0.23
+        "seconds": 0.14
       },
       {
         "file": "Motion/stand-turn-9.png",
         "unitsPerPixel": 0.003124321,
         "anchorX": 131.5,
-        "seconds": 0.23
+        "seconds": 0.15
       },
       {
         "file": "Motion/stand-turn-10.png",
         "unitsPerPixel": 0.003069118,
         "anchorX": 113.5,
-        "seconds": 0.25
+        "seconds": 0.165
       },
       {
         "file": "Motion/stand-turn-11.png",
         "unitsPerPixel": 0.003013915,
         "anchorX": 97.0,
-        "seconds": 0.27
+        "seconds": 0.17
       },
       {
         "file": "Motion/stand-turn-12.png",
         "unitsPerPixel": 0.002958712,
         "anchorX": 100.0,
-        "seconds": 0.3
+        "seconds": 0.195
       },
       {
         "file": "Motion/stand-turn-13.png",
         "restingWeight": 0.55,
         "unitsPerPixel": 0.002903509,
         "anchorX": 115.5,
-        "seconds": 0.3
+        "seconds": 0.21
       },
       {
         "file": "Motion/stand-turn-14.png",
         "unitsPerPixel": 0.002848306,
         "anchorX": 140.5,
-        "seconds": 0.26
+        "seconds": 0.22
       }
     ],
     "stepDown": [
@@ -1323,14 +1326,15 @@
     ]
   },
   "temperament": {
-    "backSleepWeight": 53,
-    "sideSleepWeight": 21,
-    "loafSleepWeight": 10,
-    "quietRestWeight": 9,
+    "backSleepWeight": 38,
+    "sideSleepWeight": 24,
+    "loafSleepWeight": 20,
+    "quietRestWeight": 15,
     "walkSpeed": 0.23,
+    "restDuration": [600, 1080],
     "sleepDuration": [
-      32,
-      94
+      720,
+      1800
     ],
     "irritationThreshold": 3
   },
@@ -1454,6 +1458,7 @@
     {
       "start": "settle-8.png",
       "through": "standTurn",
+      "plantedPaws": [[0.285,0.293],[0.293,0.326],[0.326,0.326],[0.326,0.36],[0.36,0.397],[0.397,0.395],[0.742,0.764],[0.196,0.155],[0.155,0.161],[0.161,0.168],[0.168,0.205],[0.205,0.18],[0.374,0.347],[0.17,0.145],[0.145,0.16]],
       "end": "turn-5.png"
     },
     {

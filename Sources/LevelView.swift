@@ -40,7 +40,7 @@ struct LevelView {
 
     // A knot holds x, upper-body depth relief, and the share of the local
     // ground gap to remove. A zero third value leaves a swinging foot free.
-    static func render(_ source: CGImage, knots: [[CGFloat]], contact: RestingContact?, scale: CGFloat, weight: CGFloat) throws -> (CGImage, LevelView) {
+    static func render(_ source: CGImage, knots: [[CGFloat]], contact: RestingContact?, scale: CGFloat, weight: CGFloat, plantedPaws:[CGFloat]) throws -> (CGImage, LevelView) {
         let w = source.width, h = source.height
         guard w > 1, knots.count >= 2, knots.allSatisfy({ $0.count == 3 && (0...1).contains($0[0]) &&
             (0...0.25).contains($0[1]) && (0...1).contains($0[2]) }),
@@ -115,6 +115,29 @@ struct LevelView {
                     let nearSurface = min(1, max(0,(width*0.075-gap)/(width*0.035)))
                     let correction = (gap+width*0.005)*nearSurface*blend*blend*(3-2*blend)*weight
                     columns[x] = Column(upper: columns[x].upper, sole: columns[x].sole+correction/height)
+                }
+            }
+            if !plantedPaws.isEmpty {
+                // During a turn the far planted leg was drawn higher in perspective.
+                // Measure its pad on the level-view drawing before adjusting either leg.
+                let plane=support ?? CGFloat(groundRow+1)-0.006/scale
+                support=plane
+                let original=columns, height=CGFloat(h), width=CGFloat(w)
+                for foot in plantedPaws {
+                    let center=Int(foot*width), radius=max(2,Int(width*0.017))
+                    let pad=(max(0,center-radius)...min(w-1,center+radius)).map { x in
+                        original[x].projected((CGFloat(bottoms[x])+0.5)/height)*height
+                    }.sorted()
+                    let gap=max(0,plane+1-pad[3*pad.count/4])
+                    guard gap>0 else {continue}
+                    for x in 0..<w {
+                        let distance=(CGFloat(x)/width-foot)/0.125
+                        let t=min(1,max(0,(abs(distance)-0.34)/0.66))
+                        let shift=gap*(1-t*t*(3-2*t))/height
+                        let c=original[x]
+                        columns[x]=Column(upper:max(columns[x].upper,c.upper+0.24*shift),
+                                          sole:max(columns[x].sole,c.sole+shift))
+                    }
                 }
             }
             let view = LevelView(columns: columns, height: CGFloat(h), supportFromTop: support)

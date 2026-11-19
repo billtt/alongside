@@ -28,8 +28,9 @@ final class PetController {
     private var age:Double=0, duration:Double=0
     private var direction:CGFloat = -1
     private var walkStart=0
-    private var brisk=false
-    private var walkRate:CGFloat {art.gait.speed*(brisk ? 1.85:1)}
+    private var walkRate:CGFloat {art.gait.speed}
+    private var wakeHold:Double {Double.random(in:4...5.5)}
+    private var nextTwitch=Double.infinity
     private var enjoymentAt:Double?
 
     private var journey:DockMotion?, fallStart:CGFloat=0
@@ -105,10 +106,10 @@ final class PetController {
     private func set(_ p:Pose,_ seconds:Double) {
         arrival=nil;enjoymentAt=nil
         if p != .walking {walkStart=0}
-        if p != .walking && p != .hop && p != .changing {brisk=false}
         if p != .hop {journey=nil}
         reaction=nil
         if p == .carried || p == .fall || p == .hop {heartAge=nil;blinkAge=nil}
+        nextTwitch=(p == .sleepSide || p == .sleepLoaf) ? .random(in:12...30):.infinity
         pose=p;duration=seconds;age=0
     }
     // Both ends belong to the actual playing clips, including when a menu action interrupts a turn.
@@ -123,13 +124,9 @@ final class PetController {
         }
         let start=initial ?? MotionFrame(frame())
         if next == .walking {walkStart=0}
-        var route=motions.path(from:start,to:end)
-        if brisk && next == .walking && route.count>11 {
-            let authored=route
-            route=(0...10).map {authored[Int((Double($0*(authored.count-1))/10).rounded())]}
-        }
+        let route=motions.path(from:start,to:end)
         if route.count==1 {set(next,seconds);return}
-        let sequence=Reaction(path:route,maximumFrameTime:maximumFrameTime)
+        let sequence=Reaction(library:motions,path:route,maximumFrameTime:maximumFrameTime)
         set(.changing,sequence.duration)
         reaction=sequence
         arrival=(next,seconds)
@@ -139,9 +136,9 @@ final class PetController {
         let traits=art.temperament
         let side=traits.backSleepWeight+traits.sideSleepWeight, loaf=traits.backSleepWeight+traits.sideSleepWeight+traits.loafSleepWeight
         if roll<traits.backSleepWeight {beginBackSleep()}
-        else if roll<side {change(to:.sleepSide,for:.random(in:25...74))}
-        else if roll<loaf {change(to:.sleepLoaf,for:.random(in:22...55))}
-        else if roll<loaf+traits.quietRestWeight {change(to:Bool.random() ? .loaf:.side,for:.random(in:7...18))}
+        else if roll<side {change(to:.sleepSide,for:traits.sleepTime)}
+        else if roll<loaf {change(to:.sleepLoaf,for:traits.sleepTime)}
+        else if roll<loaf+traits.quietRestWeight {change(to:[Pose.prone,.loaf,.side].randomElement()!,for:traits.restTime)}
         else {startWalk()}
     }
     private func beginBackSleep() {
@@ -158,7 +155,6 @@ final class PetController {
         guard isGrounded else{return}
         let t=surface.terrain
         let initial=MotionFrame(frame())
-        brisk=false
         if let d=t.dock, towardDock || Int.random(in:0..<4) != 0 {
             if x < d.minX {direction=1}
             else if x>d.maxX {direction = -1}
@@ -176,10 +172,10 @@ final class PetController {
         switch pose {
         case .changing:
             if let arrival {set(arrival.pose,arrival.duration)}
-        case .sitting: change(to:.prone,for:.random(in:4...9))
+        case .sitting: randomRest()
         case .walking: change(to:.sitting,for:1.4)
-        case .look: set(restShape,restShape.asleep ? art.temperament.sleepTime:4.2)
-        case .backLook: set(.sleepBack,.random(in:20...55))
+        case .look: set(restShape,restShape.asleep ? art.temperament.sleepTime : (restShape == .sitting || restShape == .walking ? 4.2:art.temperament.restTime))
+        case .backLook: set(.sleepBack,art.temperament.sleepTime)
         case .hop:
             if let j=journey {x=j.hop.endX;y=j.hop.endY;walkStart=j.exitStride}
             journey=nil
@@ -190,7 +186,7 @@ final class PetController {
         case .carried: break
         case .sleepBack:
             if Int.random(in:0..<3) == 0 {beginLook(hold:1.6)}
-            else {change(to:.prone,for:4.0)}
+            else {change(to:.prone,for:art.temperament.restTime)}
         case .sleepSide,.sleepLoaf: beginLook(hold:2.0)
         case .loaf,.side,.prone: randomRest()
         }
@@ -259,30 +255,25 @@ final class PetController {
         let initial=MotionFrame(frame())
         if response == .leave {
             pressurePoint=nil;lastDrag=nil;heartAge=nil;blinkAge=nil
-            if pose == .backLook {
-                // A cat already facing away only has to lower its head.
-                change(to:.sleepBack,for:art.temperament.sleepTime,from:initial,maximumFrameTime:0.075)
-            } else {
-                let terrain=surface.terrain
-                direction=point.x<x ? 1:-1
-                let ahead=terrain.bound(x+direction*unit*0.8,radius:radius)
-                if abs(ahead-x)<unit*0.3 {direction = -direction}
-                brisk=true
-                walkStart=0
-                change(to:.walking,for:1.45,from:initial,maximumFrameTime:0.037)
-            }
+            let sleepy=pose.asleep || pose == .backLook || (pose == .look && restShape.asleep)
+            let terrain=surface.terrain
+            direction=point.x<x ? 1:-1
+            let ahead=terrain.bound(x+direction*unit*0.8,radius:radius)
+            if abs(ahead-x)<unit*0.3 {direction = -direction}
+            walkStart=0
+            change(to:.walking,for:2.6,from:initial,maximumFrameTime:sleepy ? 0.20:0.11)
             return
         }
         if response == .enjoy {enjoy(from:initial);return}
         switch pose {
         case .sleepBack:
-            play(.backLook,from:initial,toward:MotionFrame(art.cel("back",2)),home:initial,hold:0.36,frameTime:0.055)
+            play(.backLook,from:initial,toward:MotionFrame(art.cel("back",2)),home:initial,hold:wakeHold,frameTime:0.055)
         case .side,.loaf,.sleepSide,.sleepLoaf:
             restShape=pose
             let key=(pose == .side || pose == .sleepSide) ? "side":"loaf"
             let peak=pose.asleep ? 0:1
             let home=MotionFrame(art.cel(key,pose.asleep ? 2:0))
-            play(.look,from:initial,toward:MotionFrame(art.cel(key,peak)),home:home,hold:0.24,frameTime:0.07)
+            play(.look,from:initial,toward:MotionFrame(art.cel(key,peak)),home:home,hold:pose.asleep ? wakeHold:0.24,frameTime:0.07)
         case .prone where response == .notice:
             restShape = .prone
             play(.look,from:initial,toward:MotionFrame(art.cel("settle",7)),home:initial,hold:0.23,frameTime:0.07)
@@ -315,7 +306,11 @@ final class PetController {
                 home=neutralFrame(for:restShape);peak=home
             }
         }
-        let sequence=Reaction(library:motions,from:initial,toward:peak,returningTo:home,hold:0.55,frameTime:0.045)
+        let waking=rest == .sleepSide || rest == .sleepLoaf
+        let awake=waking ? MotionFrame(art.cel(rest == .sleepSide ? "side":"loaf",0)):nil
+        let sequence=Reaction(library:motions,from:initial,toward:peak,returningTo:home,
+                              hold:action == .backLook ? wakeHold:0.55,frameTime:0.06,
+                              awakeAfter:awake.map {($0,wakeHold)})
         set(action,sequence.duration)
         reaction=sequence;blinkAge=nil
         enjoymentAt=sequence.peakTime
@@ -359,7 +354,12 @@ final class PetController {
         if draggedPress && pressurePoint != nil && isGrounded {return}
         let previousAge=age
         age += dt
+        if age>nextTwitch+0.38 {nextTwitch=age + .random(in:14...38)}
         let t=surface.terrain
+        if let reaction {
+            let dx=(reaction.travel(at:age)-reaction.travel(at:previousAge))*unit
+            if dx != 0 {x=t.turnX(from:x,delta:dx,radius:radius,onDock:y>t.floor+1)}
+        }
         switch pose {
         case .carried: followHand()
         case .walking:
@@ -422,10 +422,10 @@ final class PetController {
     func render() {
         let (cel,flip)=frame()
         let k=unit*cel.scale
-        let breath=(pose == .sleepSide || pose == .sleepLoaf) ? 1+0.009*sin(age*2*Double.pi/4.7):1
+        let sleeping=pose.asleep ? SleepPhase(age:age,twitchStart:nextTwitch):nil
         let grounded=isGrounded || pose == .hop || (pose != .carried && y<=surface.terrain.support(x,radius)+0.001)
         if let onset=enjoymentAt,age>=onset {
-            let placement=SpriteDrawing(cel:cel,grounded:grounded,mirror:flip,feet:CGPoint(x:x,y:y),k:k,stretch:breath,backing:screen.backingScaleFactor,screenFloor:surface.terrain.floor)
+            let placement=SpriteDrawing(cel:cel,grounded:grounded,mirror:flip,feet:CGPoint(x:x,y:y),k:k,stretch:1,backing:screen.backingScaleFactor,screenFloor:surface.terrain.floor)
             if let head=placement.headTop {
                 heartOrigin=CGPoint(x:placement.frame.minX+head.x,y:placement.frame.minY+head.y)
                 heartAge=0
@@ -435,8 +435,8 @@ final class PetController {
         }
         let lean=heartAge.map {1-0.024*pow(sin(.pi*min(1,$0/0.58)),2)} ?? 1
         let draw=SpriteDrawing(cel:cel,grounded:grounded,mirror:flip,feet:CGPoint(x:x,y:y),
-                               k:k,stretch:breath*lean,backing:screen.backingScaleFactor,
-                               headroom:heartAge == nil ? 0:clamp(unit*0.105,8,31)*2.65,screenFloor:surface.terrain.floor)
+                               k:k,stretch:lean,backing:screen.backingScaleFactor,
+                               headroom:heartAge == nil ? 0:clamp(unit*0.105,8,31)*2.65,screenFloor:surface.terrain.floor,sleepPhase:sleeping)
         let rect=draw.frame
         let origin=CGPoint(x:heartOrigin.x-rect.minX,y:heartOrigin.y-rect.minY)
         let heart=heartAge.flatMap { draw.heart(progress:$0/0.78,unit:unit,origin:origin) }
@@ -444,7 +444,7 @@ final class PetController {
             guard cel.eyeCenters != nil, art.eyelids.count==2 else {return nil}
             return elapsed<0.07 || elapsed>0.44 ? 0:1
         }
-        let redraw=heart != view.heart || lid != shownLid || view.drawing?.cel !== cel || view.drawing?.transform != draw.transform ||
+        let redraw=view.drawing?.sleepPhase != sleeping || heart != view.heart || lid != shownLid || view.drawing?.cel !== cel || view.drawing?.transform != draw.transform ||
                    view.drawing?.grounded != grounded || rect.size != panel.frame.size
         view.heart=heart;view.eyelids=lid.map {art.eyelids[$0]};shownLid=lid
         view.drawing=draw
