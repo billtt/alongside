@@ -2,6 +2,12 @@
 
 Alongside 的第一位桌面伙伴。主人描述达达是一只 11 岁半、约 9–10 公斤的英短蓝猫，平时更喜欢躺着。
 
+## 理毛修订 · 2026-11-20
+
+逐帧重绘理毛的 59 张原画与衔接稿，清除转头时叠出的五官、起身时重叠的腿和擦脸时粘连的爪子。另补八张半收舌、收舌稿，舔胸、舔肩与舔脚时保持原姿势，只作小幅舔舐；结束一组后才抬头或放腿。按不动的支撑前爪校准横向锚点，起身时逐帧从趴卧承重切换到坐姿承重。绘稿以透明 PNG 保存，未使用叠化或光流生成中间帧。
+
+[内置 image_gen 重绘提示](animations/grooming-v2/prompts.json)。正式渲染校对工具为 `Tools/GroomingReview.swift`：与 `Sources/` 中除 `main.swift` 外的 Swift 文件一起编译，运行参数为宠物资源目录、输出目录。工具输出同一比例和接地线下的全部原画，以及可重放的 30 fps `timeline.json`。
+
 ## 动画 · 从坐着到趴下
 
 [播放预览](animations/sit-to-rest-v1/dada-sit-to-rest-preview.gif) · [透明逐帧图集](animations/sit-to-rest-v1/dada-sit-to-rest.png) · [帧坐标和播放时长](animations/sit-to-rest-v1/dada-sit-to-rest.json)

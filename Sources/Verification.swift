@@ -97,6 +97,26 @@ func verifyApp() throws {
         cat.release(at: touch)
         try require(cat.pose == .look && MotionFrame(cat.frame()) == interrupted, "触碰从正在播放的理毛帧接出")
         try waitFor(cat, .prone)
+        // The old check interrupted only the initial face wash. Exercise bowed
+        // and turned heads plus the lifted hind foot, including tongue recovery.
+        let targets = [GroomingBout.Key.chest, .flank, .toes].map { art.cel("grooming", $0.rawValue-1) }
+            + Array(art.clips["groomingRecovery"]!.dropFirst())
+        for target in targets {
+            let groomingCat = PetController(art: art, screen: screen)
+            groomingCat.change(to: .prone, for: 650)
+            try waitFor(groomingCat, .prone)
+            groomingCat.groomNow()
+            for _ in 0..<7200 {
+                if groomingCat.frame().0 === target { break }
+                groomingCat.step(1/60)
+            }
+            try require(groomingCat.frame().0 === target, "舔胸、舔肩或舔脚关键帧未播放")
+            let shown = MotionFrame(groomingCat.frame())
+            let touch = try pointOn(groomingCat, .head)
+            groomingCat.press(at: touch); groomingCat.release(at: touch)
+            try require(groomingCat.pose == .look && MotionFrame(groomingCat.frame()) == shown, "低头或转头理毛时触摸发生跳帧")
+            try waitFor(groomingCat, .prone)
+        }
     }
     print("Displays",NSScreen.screens.count)
     for s in NSScreen.screens {
@@ -374,6 +394,7 @@ func verifyPetting(_ art: PetArt) throws {
 
 
 func verifyLocomotion(_ art:PetArt) throws {
+    try verifyGrooming(art)
     func require(_ ok:Bool,_ message:String)throws {if !ok {throw ArtError.invalid(message)}}
     // Sample the front and rear independently; checking a single bottom-most
     // row lets a cat pass while its entire haunch floats above the platform.
@@ -529,4 +550,58 @@ func verifyLocomotion(_ art:PetArt) throws {
     try require(pinned.crossing(from:stop,to:stop-1,direction:-1,radius:120,onDock:true)==nil &&
                 pinned.landingX(near:stop-1,radius:120)==stop,"屏幕边缘无处跳下时停在平台上")
     print("已校对平视姿势前后接地、行走支撑爪、避让步频、左右两侧上下台阶和不同显示尺寸。")
+}
+
+// Inspect every authored edge and every emitted beat, including recovery cels.
+// This catches fast skipped drawings, pose resets on each lick, and unconnected
+// frames that would otherwise use MotionLibrary's direct-jump fallback.
+func verifyGrooming(_ art: PetArt) throws {
+    guard let keys = art.clips["grooming"] else { return }
+    func require(_ ok: Bool, _ message: String) throws { if !ok { throw ArtError.invalid(message) } }
+    struct Random: RandomNumberGenerator {
+        var state: UInt64
+        mutating func next() -> UInt64 {
+            state = state &* 6364136223846793005 &+ 1442695040888963407
+            return state
+        }
+    }
+    let library = MotionLibrary(art), home = MotionFrame(art.cel("settle", 8))
+    var neighbors: [MotionFrame: Set<MotionFrame>] = [:]
+    for track in art.transitions {
+        for pair in zip(track.frames, track.frames.dropFirst()) {
+            let a = MotionFrame(pair.0), b = MotionFrame(pair.1)
+            neighbors[a, default: []].insert(b); neighbors[b, default: []].insert(a)
+        }
+    }
+    let grooming = art.clips.filter { $0.key.hasPrefix("wash-") || $0.key.hasPrefix("grooming") }.flatMap(\.value)
+    for cel in grooming {
+        let frame = MotionFrame(cel), path = library.path(from: frame, to: home)
+        try require(path.last == home && zip(path, path.dropFirst()).allSatisfy { neighbors[$0.0]?.contains($0.1) == true }, "理毛中断缺少连续收势原画")
+        let im = cel.groundedImage, ink = NSBitmapImageRep(cgImage: im)
+        let plane = Int((CGFloat(im.height) - cel.supportOffset).rounded(.down)) - 1
+        for band in [0.06...0.23, 0.80...0.89] {
+            let xs = Int(band.lowerBound*Double(im.width))...Int(band.upperBound*Double(im.width))
+            let contacts = xs.filter { x in (0...3).contains { y in (ink.colorAt(x: x, y: plane-y)?.alphaComponent ?? 0) >= 0.72 } }
+            try require(contacts.count >= 3, "理毛前爪或后胯离地")
+        }
+    }
+    for seed: UInt64 in 1...32 {
+        var random = Random(state: seed)
+        let sequence = GroomingBout(art: art, motions: library, using: &random).sequence
+        let frames = sequence.timedFrames
+        try require(frames.first?.frame == home && frames.last?.frame == home, "理毛首尾没有回到原趴姿")
+        try require(frames.allSatisfy { $0.seconds >= 0.049 && $0.seconds.isFinite }, "理毛过渡过快而跳帧")
+        try require(zip(frames, frames.dropFirst()).allSatisfy { a, b in a.frame == b.frame || neighbors[a.frame]?.contains(b.frame) == true }, "理毛播放跨过了衔接帧")
+        for (index, key) in [GroomingBout.Key.lick, .chest, .flank, .toes].enumerated() {
+            let contact = MotionFrame(keys[key.rawValue-1])
+            let recovery = MotionFrame(art.cel("groomingRecovery", index))
+            let cycle = Set(library.path(from: contact, to: recovery))
+            let touches = frames.indices.filter { frames[$0].frame == contact && ( $0 == 0 || frames[$0-1].frame != contact ) }
+            var consecutiveLicks = 0
+            for (a,b) in zip(touches, touches.dropFirst()) where frames[a...b].allSatisfy({ cycle.contains($0.frame) }) { consecutiveLicks += 1 }
+            try require(consecutiveLicks >= 1, "舔舐循环重播整个抬头或抬腿过程")
+        }
+        try require(abs(sequence.travel(at: sequence.duration)) < 0.00001, "理毛结束后位置漂移")
+    }
+    print("已逐帧校对理毛承重、32 组动作顺序、收舌循环、播放时长与中断收势。")
 }

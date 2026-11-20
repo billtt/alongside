@@ -79,6 +79,13 @@ struct Reaction {
     private var beats: [Beat] = []
     private(set) var peakTime:Double=0
     var duration: Double { beats.last!.end }
+    var timedFrames: [(frame: MotionFrame, seconds: Double)] {
+        var start = 0.0
+        return beats.map { beat in
+            defer { start = beat.end }
+            return (beat.frame, beat.end - start)
+        }
+    }
 
     private mutating func append(_ frame:MotionFrame,for seconds:Double,library:MotionLibrary) {
         let last=beats.last
