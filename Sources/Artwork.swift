@@ -7,6 +7,7 @@ private struct FrameSpec: Decodable {
     let unitsPerPixel, anchorX: CGFloat
     let gripFromTop, pitchDegrees, restingWeight: CGFloat?
     let eyeCenters: [CGPoint]?
+    let attentionEars: [AttentionEar]?
     let contact: [CGFloat]?
     let seconds: Double?
 }
@@ -22,6 +23,7 @@ private struct TrackSpec: Decodable {
     let start, through, end: String
     let turnsAround: Bool?
     let plantedPaws: [[CGFloat]]?
+    let inbetweens: [String: [String]]?
 }
 private struct Descriptor: Decodable {
     let name:String
@@ -50,6 +52,7 @@ final class Cel {
     let seconds: Double?
     fileprivate(set) var touchLayout:TouchLayout?
     fileprivate(set) var eyeCenters:[CGPoint]?
+    fileprivate(set) var attention: AttentionDrawing?
     fileprivate var sleepProfile:SleepProfile?
     lazy var sleeping:SleepDrawing?=sleepProfile.flatMap {SleepDrawing(image:groundedImage,profile:$0)}
     let sourceSize: CGSize
@@ -147,13 +150,23 @@ final class Cel {
 }
 final class PetArt {
     let name:String
+    let attentionModel: AttentionModel?
+    let eyeResponseModel: EyeResponseModel?
+    let groomingModel: GroomingModel?
+    let behaviorModel: RestBehaviorModel?
+    let invitationModel: InvitationModel?
     let temperament:Temperament
     let gait:WalkCycle
     let eyelids:[EyeDrawing]
     let clips:[String:[Cel]]
-    let transitions:[(frames:[Cel], turnsAround:Bool, paws:[[CGFloat]]?)]
+    let transitions:[(frames:[Cel], turnsAround:Bool, paws:[[CGFloat]]?, inbetweens:[Int:[Cel]])]
     init(root:URL) throws {
         let data=try JSONDecoder().decode(Descriptor.self,from:Data(contentsOf:root.appendingPathComponent("pet.json")))
+        attentionModel = try AttentionModel.loadIfPresent(root: root)
+        eyeResponseModel = try EyeResponseModel.loadIfPresent(root: root)
+        groomingModel = try GroomingModel.loadIfPresent(root: root)
+        behaviorModel = try RestBehaviorModel.loadIfPresent(root: root)
+        invitationModel = try InvitationModel.loadIfPresent(root: root)
         let traits=data.temperament
         guard traits.sleepDuration.count==2,traits.sleepDuration[0]>0,traits.sleepDuration[1]>=traits.sleepDuration[0],
               traits.walkSpeed>0,traits.irritationThreshold>1 else {throw ArtError.invalid("无效的行为参数")}
@@ -218,6 +231,13 @@ final class PetArt {
                     guard eyes.count==1 || (eyes.count==2 && eyes[1].x>eyes[0].x) else {throw ArtError.invalid(spec.file)}
                     cel.eyeCenters=eyes.map(cel.projected)
                 }
+                if let ears = spec.attentionEars {
+                    let placed = ears.map { AttentionEar(tip: cel.projected($0.tip), hinge: cel.projected($0.hinge)) }
+                    guard let eyes = cel.eyeCenters,
+                          let drawing = AttentionDrawing(image: cel.groundedImage, eyes: eyes, ears: placed)
+                    else { throw ArtError.invalid("注视标定 " + spec.file) }
+                    cel.attention = drawing
+                }
                 byFile[spec.file]=cel
             }
         }
@@ -227,7 +247,19 @@ final class PetArt {
         transitions=try (data.transitions ?? []).map { track in
             guard let start=byFile[track.start],let end=byFile[track.end],
                   let between=loaded[track.through],!between.isEmpty else {throw ArtError.invalid(track.through)}
-            return ([start]+between+[end],track.turnsAround ?? false,track.plantedPaws)
+            let files = [track.start] + data.clips[track.through]!.map(\.file) + [track.end]
+            var inbetweens: [Int: [Cel]] = [:]
+            for (after, drawings) in track.inbetweens ?? [:] {
+                guard let index = files.dropLast().firstIndex(of: after), !drawings.isEmpty,
+                      track.plantedPaws == nil, track.turnsAround != true else {
+                    throw ArtError.invalid("插入过渡绘稿 " + track.through)
+                }
+                inbetweens[index] = try drawings.map { file in
+                    guard let cel = byFile[file], !files.contains(file) else { throw ArtError.invalid(file) }
+                    return cel
+                }
+            }
+            return ([start]+between+[end],track.turnsAround ?? false,track.plantedPaws,inbetweens)
         }
         for (key,n) in ["turn":6,"settle":9,"walk":6,"side":3,"back":3,"loaf":3,"paw":3,"swat":3,"nip":3,"carry":3,"leap":3,"stepDown":12,"hopUp":8,"release":4] {
             guard clips[key]?.count==n else {throw ArtError.invalid(key)}
@@ -243,11 +275,15 @@ struct SpriteDrawing {
     let transform: CGAffineTransform
     let image:CGImage
     let sleepPhase:SleepPhase?
-    init(cel:Cel,grounded:Bool,mirror:Bool,feet:CGPoint,k:CGFloat,stretch:CGFloat,backing:CGFloat,headroom:CGFloat=0,screenFloor:CGFloat?=nil,sleepPhase:SleepPhase?=nil) {
+    let gaze: CGPoint
+    private let inkDirection: CGPoint
+    init(cel:Cel,grounded:Bool,mirror:Bool,feet:CGPoint,k:CGFloat,stretch:CGFloat,backing:CGFloat,headroom:CGFloat=0,screenFloor:CGFloat?=nil,sleepPhase:SleepPhase?=nil,gaze:CGPoint = .zero) {
         self.cel=cel;self.grounded=grounded
         self.sleepPhase=sleepPhase
         let img=sleepPhase.flatMap {cel.sleeping?.image(at:$0)} ?? (grounded ? cel.groundedImage:cel.image)
-        image=img
+        self.gaze = grounded && cel.attention != nil ? AttentionDrawing.direction(gaze) : .zero
+        inkDirection = CGPoint(x: mirror ? -self.gaze.x : self.gaze.x, y: self.gaze.y)
+        image = cel.attention?.image(img, direction: inkDirection) ?? img
         let horizontal=mirror ? -k:k
         let base=feet.y-(grounded ? cel.supportOffset*k*stretch:0)
         var mapping=CGAffineTransform(a:horizontal,b:0,c:0,d:k*stretch,
@@ -281,7 +317,8 @@ struct SpriteDrawing {
                         size:size*(0.78+0.22*min(1,progress*5)),opacity:0.92*min(1,(1-progress)*3))
     }
     private func sourcePixel(_ p:CGPoint)->CGPoint {
-        let top=CGPoint(x:p.x,y:CGFloat(image.height)-p.y)
+        var top=CGPoint(x:p.x,y:CGFloat(image.height)-p.y)
+        if let attention = cel.attention { top = attention.sourcePoint(top, direction: inkDirection) }
         if let sleepPhase,let sleep=cel.sleeping {return sleep.sourcePoint(top,phase:sleepPhase)}
         return top
     }
@@ -289,6 +326,14 @@ struct SpriteDrawing {
         guard CGRect(origin:.zero,size:frame.size).contains(p) else {return false}
         let pixel=sourcePixel(p.applying(transform.inverted()))
         return cel.contains(CGPoint(x:pixel.x,y:CGFloat(image.height)-pixel.y),height:image.height)
+    }
+    func paint(in cg: CGContext, eyelids: EyeDrawing? = nil) {
+        cg.saveGState()
+        cg.concatenate(transform)
+        cg.interpolationQuality = .high
+        cg.draw(image,in:CGRect(x:0,y:0,width:image.width,height:image.height))
+        if let centers=cel.eyeCenters {eyelids?.draw(in:cg,on:image,centers:centers)}
+        cg.restoreGState()
     }
 }
 final class PetView:NSView {
@@ -300,13 +345,8 @@ final class PetView:NSView {
     override func acceptsFirstMouse(for event:NSEvent?)->Bool {true}
     override func draw(_ dirtyRect:NSRect) {
         guard let cg=NSGraphicsContext.current?.cgContext,let drawing else{return}
-        cg.clear(bounds);cg.saveGState()
-        cg.concatenate(drawing.transform)
-        cg.interpolationQuality = .high
-        let image=drawing.image
-        cg.draw(image,in:CGRect(x:0,y:0,width:image.width,height:image.height))
-        if let centers=drawing.cel.eyeCenters {eyelids?.draw(in:cg,on:image,centers:centers)}
-        cg.restoreGState()
+        cg.clear(bounds)
+        drawing.paint(in:cg,eyelids:eyelids)
         heart?.draw(in:cg)
     }
     override func mouseDown(with event:NSEvent) {

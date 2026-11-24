@@ -166,7 +166,9 @@
   "clipScale": {
     "walk": [1.115],
     "motion-walk-sit": [1.115, 1.09, 1.035, 1.0],
-    "standTurn": [1.0, 1.02, 1.045, 1.065, 1.08, 1.085, 1.085, 1.085, 1.08, 1.074, 1.065, 1.05, 1.033, 1.015],
+    "motion-sit-turn": [1.023, 0.995, 1.002, 1.032],
+    "motion-side-prone": [1.0, 1.002, 1.025, 1.045],
+    "standTurn": [1.0, 1.02, 1.045, 1.065, 1.08, 1.085, 1.085, 1.085, 1.08, 1.074, 1.065, 1.055, 1.052, 1.055],
     "stepDown": [1.065],
     "hopUp": [1.11, 1.13, 1.18, 1.18, 1.14, 1.16, 1.16, 1.13],
     "sitToStand": [1.0, 1.015, 1.035, 1.065],
@@ -176,10 +178,10 @@
   "walkContacts": [[23, 39], [39, 62], [62, 132], [301, 326], [326, 355], [136, 209]],
   "clips": {
     "groomingRecovery": [{"file": "Grooming/lick-recover.png", "anchorX": 181.951, "unitsPerPixel": 0.00324, "seconds": 0.09}, {"file": "Grooming/chest-recover.png", "anchorX": 182.951, "unitsPerPixel": 0.00324, "seconds": 0.09}, {"file": "Grooming/flank-recover.png", "anchorX": 181.951, "unitsPerPixel": 0.00324, "seconds": 0.09}, {"file": "Grooming/toes-recover.png", "anchorX": 183.451, "unitsPerPixel": 0.00324, "seconds": 0.09}],
-    "wash-lick-recover": [{"file": "Grooming/lick-half.png", "anchorX": 182.951, "unitsPerPixel": 0.00324, "seconds": 0.09}],
-    "wash-chest-recover": [{"file": "Grooming/chest-half.png", "anchorX": 182.451, "unitsPerPixel": 0.00324, "seconds": 0.09}],
-    "wash-flank-recover": [{"file": "Grooming/flank-half.png", "anchorX": 181.951, "unitsPerPixel": 0.00324, "seconds": 0.09}],
-    "wash-toes-recover": [{"file": "Grooming/toes-half.png", "anchorX": 183.951, "unitsPerPixel": 0.00324, "seconds": 0.09}],
+    "wash-lick-recover": [{"file": "Grooming/lick-half.png", "anchorX": 182.951, "unitsPerPixel": 0.00324, "seconds": 0.09}, {"file": "Grooming/lick-arc.png", "anchorX": 182.451, "unitsPerPixel": 0.00324, "seconds": 0.09}],
+    "wash-chest-recover": [{"file": "Grooming/chest-arc.png", "anchorX": 182.451, "unitsPerPixel": 0.00324, "seconds": 0.09}, {"file": "Grooming/chest-half.png", "anchorX": 182.451, "unitsPerPixel": 0.00324, "seconds": 0.09}],
+    "wash-flank-recover": [{"file": "Grooming/flank-half.png", "anchorX": 181.951, "unitsPerPixel": 0.00324, "seconds": 0.09}, {"file": "Grooming/flank-arc.png", "anchorX": 181.951, "unitsPerPixel": 0.00324, "seconds": 0.09}],
+    "wash-toes-recover": [{"file": "Grooming/toes-half.png", "anchorX": 183.951, "unitsPerPixel": 0.00324, "seconds": 0.09}, {"file": "Grooming/toes-arc.png", "anchorX": 183.451, "unitsPerPixel": 0.00324, "seconds": 0.09}],
     "grooming": [
       {"file": "Grooming/lift.png", "anchorX": 181.451, "unitsPerPixel": 0.00324, "seconds": 0.07},
       {"file": "Grooming/wrist.png", "anchorX": 181.951, "unitsPerPixel": 0.00324, "seconds": 0.07},
@@ -509,6 +511,10 @@
       },
       {
         "file": "settle-8.png",
+        "attentionEars": [
+          {"tip": [35, 3], "hinge": [49, 48]},
+          {"tip": [148, 3], "hinge": [139, 46]}
+        ],
         "sleepDrawing": {"chestX": 0.66, "chestRadius": 0.37, "whiskerTips": []},
         "eyeCenters": [[66, 75], [120, 75]],
         "unitsPerPixel": 0.0026954177897574125,
@@ -1613,7 +1619,11 @@
     {
       "start": "walk-0.png",
       "through": "motion-walk-sit",
-      "end": "settle-0.png"
+      "end": "settle-0.png",
+      "inbetweens": {
+        "Motion/walk-sit-1.png": ["Motion/stand-turn-3.png"],
+        "Motion/walk-sit-2.png": ["settle-3.png"]
+      }
     },
     {
       "start": "turn-5.png",

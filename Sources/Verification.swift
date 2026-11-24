@@ -43,8 +43,10 @@ func verifyApp() throws {
     else {throw ArtError.invalid("需要桌面会话")}
     let art=try PetArt(root:resources.appendingPathComponent("Pets/Dada"))
     try verifyPetting(art)
+    try verifyAttention(art, screen: screen)
+    try verifyInvitation(art, screen: screen)
     try verifyGroundInk(art)
-    let pet=PetController(art:art,screen:screen)
+    let pet=PetController(art:art,screen:screen,defaults:nil)
     func pointOn(_ pet:PetController,_ area:TouchArea) throws -> CGPoint {
         pet.render()
         guard let draw=pet.view.drawing else {throw ArtError.invalid("缺少角色画面")}
@@ -68,7 +70,7 @@ func verifyApp() throws {
         pet.drag(to:point)
     }
     if art.clips["grooming"] != nil {
-        let cat = PetController(art: art, screen: screen)
+        let cat = PetController(art: art, screen: screen, defaults: nil)
         cat.change(to: .prone, for: 650)
         try waitFor(cat, .prone)
         let home = MotionFrame(cat.frame())
@@ -82,13 +84,15 @@ func verifyApp() throws {
         for _ in 0..<1800 where cat.pose == .prone { cat.step(0.1) }
         try require(cat.pose == .grooming && MotionFrame(cat.frame()) == home, "趴卧时自行开始理毛")
         let feet = CGPoint(x: cat.x, y: cat.y)
-        var sawToe = false
+        let contacts = [GroomingBout.Key.lick, .chest, .flank, .toes].map { art.cel("grooming", $0.rawValue - 1) }
+        var sawLick = false
         for _ in 0..<4000 where cat.pose == .grooming {
             cat.step(1/30)
-            if cat.frame().0 === art.cel("grooming", GroomingBout.Key.toes.rawValue - 1) { sawToe = true }
+            if contacts.contains(where: { $0 === cat.frame().0 }) { sawLick = true }
         }
-        try require(sawToe && cat.pose == .prone && MotionFrame(cat.frame()) == home &&
+        try require(sawLick && cat.pose == .prone && MotionFrame(cat.frame()) == home &&
                     CGPoint(x: cat.x, y: cat.y) == feet, "理毛接地并收回同一趴姿")
+        cat.change(to: .prone, for: 60)
         cat.groomNow()
         cat.step(2)
         let interrupted = MotionFrame(cat.frame())
@@ -97,12 +101,13 @@ func verifyApp() throws {
         cat.release(at: touch)
         try require(cat.pose == .look && MotionFrame(cat.frame()) == interrupted, "触碰从正在播放的理毛帧接出")
         try waitFor(cat, .prone)
+        try require((50...58).contains(cat.remainingPoseTime), "中途打断理毛保留原来一分钟卧姿的余量")
         // The old check interrupted only the initial face wash. Exercise bowed
         // and turned heads plus the lifted hind foot, including tongue recovery.
         let targets = [GroomingBout.Key.chest, .flank, .toes].map { art.cel("grooming", $0.rawValue-1) }
             + Array(art.clips["groomingRecovery"]!.dropFirst())
         for target in targets {
-            let groomingCat = PetController(art: art, screen: screen)
+            let groomingCat = PetController(art: art, screen: screen, defaults: nil)
             groomingCat.change(to: .prone, for: 650)
             try waitFor(groomingCat, .prone)
             groomingCat.groomNow()
@@ -216,7 +221,7 @@ func verifyApp() throws {
     try verifyLocomotion(art)
     let frame=art.cel("settle",0),h=frame.groundedImage.height
     try require(!frame.contains(.zero,height:h) && frame.contains(CGPoint(x:frame.image.width/2,y:h/2),height:h),"透明像素点击穿透")
-    let gestures=PetController(art:art,screen:screen)
+    let gestures=PetController(art:art,screen:screen,defaults:nil)
     let head=try pointOn(gestures,.head)
     gestures.press(at:head)
     try require(gestures.pose == .sitting && gestures.view.heart == nil,"坐姿原地眯眼")
@@ -232,7 +237,8 @@ func verifyApp() throws {
     try require(gestures.x != fleeX || gestures.pose == .hop || gestures.pose == .changing,"走开时有实际位移或台阶过渡")
     for track in art.transitions {
         let start=MotionFrame(track.frames.first!),end=MotionFrame(track.frames.last!,track.turnsAround)
-        try require(gestures.motions.path(from:start,to:end).count==track.frames.count,"过渡经过整条手绘帧序列")
+        let count = track.frames.count + track.inbetweens.values.reduce(0) { $0 + $1.count }
+        try require(gestures.motions.path(from:start,to:end).count==count,"过渡经过整条手绘帧序列")
     }
     gestures.sleepNow();try waitFor(gestures,.sleepBack)
     gestures.step(4)
@@ -287,7 +293,7 @@ func verifyApp() throws {
         }
     }
     for (nap,key) in [(Pose.sleepLoaf,"loaf"),(.sleepSide,"side"),(.sleepBack,"back")] {
-        let cat=PetController(art:art,screen:screen)
+        let cat=PetController(art:art,screen:screen,defaults:nil)
         cat.change(to:nap,for:art.temperament.sleepTime)
         try waitFor(cat,nap)
         cat.step(600);cat.render()
@@ -319,6 +325,20 @@ func verifyPetting(_ art: PetArt) throws {
     func check(_ ok: Bool, _ label: String) throws {
         if !ok {throw ArtError.invalid(label)}
     }
+    guard let attention = art.attentionModel, let daily = art.behaviorModel else {
+        throw ArtError.invalid("缺少达达的本地模型")
+    }
+    try verifyAttentionPolicy(attention)
+    guard let eyes = art.eyeResponseModel else { throw ArtError.invalid("缺少眼神回应模型") }
+    try verifyEyeResponses(eyes)
+    guard let invitation = art.invitationModel else { throw ArtError.invalid("缺少招手模型") }
+    try verifyInvitationPolicy(invitation)
+    let candidates: [ObservedActivity] = [.lie, .sit, .stand, .move]
+    // The reference checkpoint assigns 0.720737 to lie and 0.212520 to sit.
+    try check(daily.next(after: .lie, current: .groom, seconds: 15, allowed: candidates, draw: 0.72073) == .lie &&
+              daily.next(after: .lie, current: .groom, seconds: 15, allowed: candidates, draw: 0.72075) == .sit,
+              "真实行为网络与本机训练结果一致")
+    try check(daily.restDrive(after: 600) > daily.restDrive(after: 1), "久卧时保留较强休息倾向")
     let threshold=art.temperament.irritationThreshold
     var taps=PettingInput()
     try check(taps.press(.head,threshold:threshold) == .notice,"头部按下即回应")
@@ -394,6 +414,8 @@ func verifyPetting(_ art: PetArt) throws {
 
 
 func verifyLocomotion(_ art:PetArt) throws {
+    try verifyTransitionContinuity(art)
+    try verifyApproachGait(art)
     try verifyGrooming(art)
     func require(_ ok:Bool,_ message:String)throws {if !ok {throw ArtError.invalid(message)}}
     // Sample the front and rear independently; checking a single bottom-most
@@ -557,6 +579,8 @@ func verifyLocomotion(_ art:PetArt) throws {
 // frames that would otherwise use MotionLibrary's direct-jump fallback.
 func verifyGrooming(_ art: PetArt) throws {
     guard let keys = art.clips["grooming"] else { return }
+    try verifyGroomingArtwork(art)
+    try verifyGroomingControl(art)
     func require(_ ok: Bool, _ message: String) throws { if !ok { throw ArtError.invalid(message) } }
     struct Random: RandomNumberGenerator {
         var state: UInt64

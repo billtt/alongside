@@ -15,9 +15,15 @@ struct MotionFrame: Hashable {
 
 final class MotionLibrary {
     private var adjacent: [MotionFrame: [MotionFrame]] = [:]
+    private var inbetweens: [MotionFrame: [MotionFrame: [MotionFrame]]] = [:]
 
     private var plantSteps:[MotionFrame:[MotionFrame:CGFloat]]=[:]
     func step(from a:MotionFrame,to b:MotionFrame)->CGFloat {plantSteps[a]?[b] ?? 0}
+
+    private func registerStep(_ dx: CGFloat, from a: MotionFrame, to b: MotionFrame) {
+        plantSteps[a, default: [:]][b] = dx
+        plantSteps[b, default: [:]][a] = -dx
+    }
 
     init(_ art: PetArt) {
         for flip in [false, true] {
@@ -32,16 +38,31 @@ final class MotionLibrary {
                             (u*CGFloat(f.cel.image.width)-f.cel.anchorX)*f.cel.scale*(f.mirrored ? -1:1)
                         }
                         let dx=foot(a,toes[0])-foot(b,toes[1])
-                        plantSteps[a,default:[:]][b]=dx
-                        plantSteps[b,default:[:]][a] = -dx
+                        registerStep(dx, from: a, to: b)
                     }
                     adjacent[a, default: []].append(b)
                     adjacent[b, default: []].append(a)
                 }
             }
-            for track in art.transitions { connect(track.frames, turning: track.turnsAround,paws: track.paws) }
-            for key in ["settle", "walk", "side", "loaf"] { connect(art.clips[key]!) }
-            connect([art.cel("walk",5),art.cel("walk",0)])
+            for track in art.transitions {
+                connect(track.frames, turning: track.turnsAround, paws: track.paws)
+                for (i, borrowed) in track.inbetweens {
+                    let a = MotionFrame(track.frames[i], flip), b = MotionFrame(track.frames[i + 1], flip)
+                    let frames = borrowed.map { MotionFrame($0, flip) }
+                    inbetweens[a, default: [:]][b] = frames
+                    inbetweens[b, default: [:]][a] = Array(frames.reversed())
+                }
+            }
+            for key in ["settle", "side", "loaf"] { connect(art.clips[key]!) }
+            let walk = art.clips["walk"]!
+            connect(walk + [walk[0]])
+            // An interruption may take either direction around the authored walk
+            // cycle. Keep the same foot planted as in uninterrupted locomotion.
+            for i in walk.indices {
+                let a = MotionFrame(walk[i], flip)
+                let b = MotionFrame(walk[(i + 1) % walk.count], flip)
+                registerStep(art.gait.distances[i] * (flip ? 1 : -1), from: a, to: b)
+            }
             connect(art.clips["release"]!+[art.cel("hopUp",7),art.cel("walk",0)])
         }
     }
@@ -64,7 +85,23 @@ final class MotionLibrary {
             cursor = previous[cursor]!
             route.append(cursor)
         }
-        return route.reversed()
+        let direct = Array(route.reversed())
+        // Borrow an existing drawing to soften this edge only. Registering it
+        // as a graph junction would reroute unrelated turns through these poses.
+        let interior = Set(direct.dropFirst().dropLast())
+        var result = [start]
+        for (a, b) in zip(direct, direct.dropFirst()) {
+            // Preserve every original pose and its planted steps on longer
+            // routes that already pass through a borrowed pose elsewhere.
+            let fill = inbetweens[a]?[b] ?? []
+            result.append(contentsOf: fill.filter { !interior.contains($0) })
+            result.append(b)
+        }
+        // On an interruption the current or requested drawing may itself be a
+        // borrowed pose. Start there or arrive there without replaying it.
+        let from = result.lastIndex(of: start)!
+        let to = result[from...].firstIndex(of: end)!
+        return Array(result[from...to])
     }
 
 

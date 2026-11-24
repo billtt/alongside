@@ -4,8 +4,22 @@ enum Pose: Equatable {
     case changing, sitting, prone, side, loaf, sleepSide, sleepBack, sleepLoaf
     case look, backLook, grooming, walking, hop, fall, carried
     var asleep:Bool { self == .sleepSide || self == .sleepBack || self == .sleepLoaf }
+    var observedActivity: ObservedActivity? {
+        switch self {
+        case .prone, .loaf, .side: return .lie
+        case .sitting: return .sit
+        case .walking: return .move
+        case .grooming: return .groom
+        default: return nil
+        }
+    }
 }
 final class PetController {
+    struct InvitedWalk {
+        var gait: ApproachGait
+        let pace: CGFloat
+        let restRemaining: Double
+    }
     let art:PetArt
     let motions:MotionLibrary
     let panel:PetPanel
@@ -32,7 +46,7 @@ final class PetController {
     private var wakeHold:Double {Double.random(in:4...5.5)}
     private var nextBlink = Double.infinity
     private var nextGroom = Double.infinity
-    private var restAfterGroom = 0.0
+    private var restAtGroomStart = 0.0
     private var nextTwitch=Double.infinity
     private var enjoymentAt:Double?
 
@@ -49,11 +63,36 @@ final class PetController {
     private var shownLid: Int?
     private var lastTime=ProcessInfo.processInfo.systemUptime
     private var inspectAt=0.0, timer:Timer?
-    private var arrival:(pose:Pose, duration:Double)?
+    private var arrival:(pose:Pose, duration:Double, invitation:InvitedWalk?, showcaseGrooming:Bool)?
     private var restShape:Pose = .prone
+    let attention: AttentionPolicy?
+    let invitation: InvitationPolicy?
+    private var invitationGesture = InvitationGesture()
+    private var invitedWalk: InvitedWalk?
+    var isFollowingInvitation: Bool { invitedWalk != nil || arrival?.invitation != nil }
+    private let attentionDraw: () -> Double
+    private var approach = PointerApproach()
+    private var gaze = CGPoint.zero, gazeTarget = CGPoint.zero
+    private var attentionRemaining = 0.0
+    private var eyeMovement: EyeMovement?
+    private var socialBlinkCooldown = 0.0
+    private var disturbance = 0.0
+    private var pendingGentleEncounter = false
+    private var lastActivity: ObservedActivity?
+    private var priorActivity: ObservedActivity?
+    // Keep the clock, breathing and scheduled grooming when petting briefly
+    // takes over a rest pose. A menu action or a withdrawal abandons this return.
+    private var interruptedRest: (pose: Pose, age: Double, duration: Double,
+                                  blink: Double, groom: Double, twitch: Double)?
+    var isAttending: Bool { attentionRemaining > 0 }
+    var remainingPoseTime: Double { max(0, duration - age) }
 
-    init(art:PetArt,screen:NSScreen) {
+    init(art:PetArt,screen:NSScreen,attentionDraw: @escaping () -> Double = { Double.random(in: 0..<1) },
+         defaults: UserDefaults? = .standard) {
         self.art=art;self.screen=screen;motions=MotionLibrary(art)
+        self.attentionDraw = attentionDraw
+        attention = art.attentionModel.map { AttentionPolicy(model: $0, defaults: defaults) }
+        invitation = art.invitationModel.map { InvitationPolicy(model: $0, defaults: defaults) }
         surface=detector.read(screen)
         let saved=UserDefaults.standard.double(forKey:"PetScale")
         scale=saved>0 ? clamp(saved,0.55,2) : 1
@@ -74,6 +113,7 @@ final class PetController {
         return clamp((h>8 ? h:68)*2.25,100,240)
     }
     func start() {
+        if attention != nil { restNow() }
         panel.orderFrontRegardless()
         let t=Timer(timeInterval:1/30,repeats:true){[weak self]_ in self?.tick()}
         t.tolerance=0.005;RunLoop.main.add(t,forMode:.common);timer=t
@@ -88,6 +128,8 @@ final class PetController {
         screen=display
         let updated=detector.read(display)
         guard force || changed || updated.terrain != surface.terrain else {return}
+        interruptInvitation()
+        approach = PointerApproach()
         surface=updated
         if changed || updated.terrain.dock != nil {base=Self.baseSize(screen:display,surface:surface)}
         if pose == .hop || arrival?.pose == .hop {journey=nil;set(.walking,3)}
@@ -99,6 +141,8 @@ final class PetController {
         else if y>floor+1 {fallStart=y;set(.fall,clamp(sqrt((y-floor)/800),0.25,1.2))}
     }
     func resize(_ new:CGFloat, persist:Bool=true) {
+        interruptInvitation()
+        approach = PointerApproach()
         scale=clamp(new,0.55,2)
         if persist {UserDefaults.standard.set(Double(scale),forKey:"PetScale")}
         if pose == .hop || arrival?.pose == .hop {journey=nil;set(.walking,3)}
@@ -106,7 +150,21 @@ final class PetController {
         else {x=surface.terrain.landingX(near:x,radius:radius);reconcileHeight()}
         render()
     }
-    private func set(_ p:Pose,_ seconds:Double) {
+    private func set(_ p:Pose,_ seconds:Double, invitation: InvitedWalk? = nil, showcaseGrooming: Bool = false) {
+        approach = PointerApproach()
+        invitationGesture = InvitationGesture()
+        invitedWalk = invitation
+        gaze = .zero; gazeTarget = .zero; attentionRemaining = 0
+        eyeMovement = nil
+        if p != .look && p != .backLook { interruptedRest = nil }
+        if p != .look { pendingGentleEncounter = false }
+        if p.asleep {
+            priorActivity = nil
+            lastActivity = nil
+        } else if let next = p.observedActivity, next != lastActivity {
+            priorActivity = lastActivity
+            lastActivity = next
+        }
         arrival=nil;enjoymentAt=nil
         if p != .walking {walkStart=0}
         if p != .hop {journey=nil}
@@ -117,14 +175,15 @@ final class PetController {
         nextGroom = p == .prone && art.clips["grooming"] != nil ? .random(in: 80...180) : .infinity
         pose=p;duration=seconds;age=0
         if p == .grooming {
-            let bout = GroomingBout(art: art, motions: motions)
+            let bout = GroomingBout(art: art, motions: motions, showcase: showcaseGrooming)
             reaction = bout.sequence
             duration = bout.sequence.duration
-            restAfterGroom = max(1, seconds - duration)
+            restAtGroomStart = seconds
         }
     }
     // Both ends belong to the actual playing clips, including when a menu action interrupts a turn.
-    func change(to next:Pose, for seconds:Double, from initial:MotionFrame?=nil, maximumFrameTime:Double = .infinity) {
+    func change(to next:Pose, for seconds:Double, from initial:MotionFrame?=nil, maximumFrameTime:Double = .infinity,
+                invitation: InvitedWalk? = nil, showcaseGrooming: Bool = false) {
         let end:MotionFrame
         switch next {
         case .walking,.hop: end=MotionFrame(art.cel("walk",0),direction>0)
@@ -136,11 +195,11 @@ final class PetController {
         let start=initial ?? MotionFrame(frame())
         if next == .walking {walkStart=0}
         let route=motions.path(from:start,to:end)
-        if route.count==1 {set(next,seconds);return}
+        if route.count==1 {set(next,seconds,invitation:invitation,showcaseGrooming:showcaseGrooming);return}
         let sequence=Reaction(library:motions,path:route,maximumFrameTime:maximumFrameTime)
         set(.changing,sequence.duration)
         reaction=sequence
-        arrival=(next,seconds)
+        arrival=(next,seconds,invitation,showcaseGrooming)
     }
     private func randomRest() {
         let roll=Int.random(in:0..<100)
@@ -149,16 +208,33 @@ final class PetController {
         if roll<traits.backSleepWeight {beginBackSleep()}
         else if roll<side {change(to:.sleepSide,for:traits.sleepTime)}
         else if roll<loaf {change(to:.sleepLoaf,for:traits.sleepTime)}
+        else if let model = art.behaviorModel, let current = pose.observedActivity, let prior = priorActivity,
+                let next = model.next(after: prior, current: current, seconds: age,
+                                      allowed: art.clips["grooming"] == nil ? [.lie,.sit,.move] : [.lie,.sit,.move,.groom],
+                                      draw: Double.random(in: 0..<1)) {
+            switch next {
+            case .lie: change(to: [Pose.prone, .loaf, .side].randomElement()!, for: traits.restTime)
+            case .sit: change(to: .sitting, for: .random(in: 2...6))
+            case .groom: change(to: .grooming, for: traits.restTime)
+            case .move: startWalk()
+            case .stand: break // No standing cel in the allowed set.
+            }
+        }
         else if roll<loaf+traits.quietRestWeight {change(to:[Pose.prone,.loaf,.side].randomElement()!,for:traits.restTime)}
         else {startWalk()}
+    }
+    func restNow() {
+        guard isGrounded else { return }
+        change(to: .prone, for: art.temperament.restTime)
+        render()
     }
     private func beginBackSleep() {
         change(to:.sleepBack,for:art.temperament.sleepTime)
     }
-    func groomNow() {
+    func groomNow(showcase: Bool = true) {
         guard isGrounded, art.clips["grooming"] != nil, pose != .grooming, arrival?.pose != .grooming else { return }
         let rest = pose == .prone ? duration - age : art.temperament.restTime
-        change(to: .grooming, for: rest)
+        change(to: .grooming, for: rest, showcaseGrooming: showcase)
         render()
     }
     func sleepNow() {
@@ -186,11 +262,18 @@ final class PetController {
         render()
     }
     private func advanceState() {
+        if (pose == .look || pose == .backLook), let saved = interruptedRest {
+            let elapsed = age
+            set(saved.pose, saved.duration)
+            age = min(saved.duration, saved.age + elapsed)
+            nextBlink = saved.blink; nextGroom = saved.groom; nextTwitch = saved.twitch
+            return
+        }
         switch pose {
         case .changing:
-            if let arrival {set(arrival.pose,arrival.duration)}
+            if let arrival {set(arrival.pose,arrival.duration,invitation:arrival.invitation,showcaseGrooming:arrival.showcaseGrooming)}
         case .grooming:
-            set(.prone, restAfterGroom)
+            set(.prone, max(1, restAtGroomStart - age))
             nextGroom = .random(in: 180...360)
         case .sitting: randomRest()
         case .walking: change(to:.sitting,for:1.4)
@@ -215,11 +298,14 @@ final class PetController {
         guard let draw=view.drawing else {return}
         let local=CGPoint(x:point.x-draw.frame.minX,y:point.y-draw.frame.minY)
         guard let area=draw.touchArea(at:local) else {return}
+        interruptInvitation()
+        pendingGentleEncounter = false
         pressurePoint=point;lastDrag=point;draggedPress=false
         pickupBand=panel.frame.insetBy(dx:-max(6,unit*0.07),dy:0)
         if isGrounded, let response=petting.press(area,threshold:art.temperament.irritationThreshold,clickCount:clickCount) {
-            respond(response,at:point)
+            respond(response,at:point,area:area)
         }
+        disturbance = min(1, disturbance + (area == .sensitive ? 0.48 : 0.18))
         render()
     }
     func drag(to p:CGPoint) {
@@ -227,7 +313,7 @@ final class PetController {
         let previous=lastDrag ?? down
         lastDrag=p
         if !draggedPress && hypot(p.x-down.x,p.y-down.y)>=4 {
-            draggedPress=true;petting.cancelDrag()
+            draggedPress=true;pendingGentleEncounter=false;petting.cancelDrag()
         }
         if pose != .carried {
             let first=art.cel("carry",0)
@@ -268,10 +354,13 @@ final class PetController {
             set(.fall,clamp(sqrt(max(0,fallStart-target)/800),0.18,1.2));render()
         } else if let response=petting.release(), isGrounded {
             respond(response,at:down);render()
+        } else if pendingGentleEncounter && !draggedPress {
+            attention?.recordGentleEncounter()
         }
+        pendingGentleEncounter = false
     }
 
-    private func respond(_ response:TouchResponse,at point:CGPoint) {
+    private func respond(_ response:TouchResponse,at point:CGPoint,area:TouchArea? = nil) {
         let initial=MotionFrame(frame())
         if response == .leave {
             pressurePoint=nil;lastDrag=nil;heartAge=nil;blinkAge=nil
@@ -284,7 +373,24 @@ final class PetController {
             change(to:.walking,for:2.6,from:initial,maximumFrameTime:sleepy ? 0.20:0.11)
             return
         }
-        if response == .enjoy {enjoy(from:initial);return}
+        if response == .notice, pose == .prone, attention != nil {
+            if area == .head || area == .back { considerAttention(to: point, touched: true) }
+            return
+        }
+        if pose.asleep || [.prone, .side, .loaf].contains(pose) {
+            interruptedRest = (pose, age, duration, nextBlink, nextGroom, nextTwitch)
+        } else if pose == .grooming {
+            interruptedRest = (.prone, 0, max(1, restAtGroomStart - age),
+                               .random(in: 4...13), .random(in: 180...360), .infinity)
+        } else if response == .enjoy && (pose == .look || pose == .backLook) {
+            interruptedRest?.age += age
+        }
+        if response == .enjoy {
+            let wasProne = pose == .prone
+            enjoy(from:initial)
+            pendingGentleEncounter = wasProne
+            return
+        }
         switch pose {
         case .sleepBack:
             play(.backLook,from:initial,toward:MotionFrame(art.cel("back",2)),home:initial,hold:wakeHold,frameTime:0.055)
@@ -368,10 +474,159 @@ final class PetController {
         let dt=min(0.10,max(0,now-lastTime));lastTime=now
         if now>=inspectAt {refreshScreen(at:nil);inspectAt=now+(pose == .walking || pose == .hop || pose == .carried ? 0.25:0.8)}
         if pressurePoint != nil && NSEvent.pressedMouseButtons & 1 == 0 {release(at:NSEvent.mouseLocation)}
-        step(dt)
+        step(dt, pointer: NSEvent.mouseLocation, pointerButtonDown: NSEvent.pressedMouseButtons != 0)
         render()
     }
-    func step(_ dt:Double) {
+    private var facePoint: CGPoint {
+        guard let draw = view.drawing, let eyes = draw.cel.eyeCenters, eyes.count == 2 else {
+            return CGPoint(x: x, y: y + unit * 0.35)
+        }
+        let center = CGPoint(x: (eyes[0].x + eyes[1].x) / 2,
+                             y: CGFloat(draw.image.height) - (eyes[0].y + eyes[1].y) / 2).applying(draw.transform)
+        return CGPoint(x: draw.frame.minX + center.x, y: draw.frame.minY + center.y)
+    }
+    private func directionToPointer(_ point: CGPoint) -> CGPoint {
+        let head = facePoint
+        return CGPoint(x: clamp((point.x - head.x) / (unit * 0.38), -1, 1),
+                       y: clamp((point.y - head.y) / (unit * 0.38), -1, 1))
+    }
+    private func considerAttention(to point: CGPoint, touched: Bool) {
+        guard let attention else { return }
+        let head = facePoint
+        let distance = hypot(point.x - head.x, point.y - head.y) / unit
+        let decision = attention.decide(touch: touched, disturbance: disturbance,
+                                        restDrive: art.behaviorModel?.restDrive(after: age) ?? 0.8,
+                                        elapsed: age, nearness: clamp(1 - distance / 1.6, 0, 1),
+                                        approachSpeed: touched ? 0 : approach.closingSpeed,
+                                        draw: attentionDraw())
+        if decision.looks {
+            attentionRemaining = decision.hold
+            gazeTarget = directionToPointer(point)
+            if art.eyeResponseModel != nil {
+                if eyeMovement == nil && socialBlinkCooldown <= 0 {
+                    scheduleEyeMovement(.neutral, window: decision.hold)
+                }
+            } else if touched && hypot(gazeTarget.x, gazeTarget.y) < 0.25 { blinkAge = 0 }
+        }
+    }
+    var canReceiveSlowBlink: Bool {
+        pose == .prone && art.eyeResponseModel != nil && pressurePoint == nil && socialBlinkCooldown <= 0 &&
+            eyeMovement?.lid(at: age) == nil
+    }
+    func offerSlowBlink() {
+        guard canReceiveSlowBlink else { return }
+        // An explicit social cue gets one opportunity, even if the sampled
+        // movement falls outside the window and Dada keeps resting.
+        scheduleEyeMovement(.slowBlink, window: 8)
+        socialBlinkCooldown = 8
+    }
+    private func scheduleEyeMovement(_ condition: EyeResponseModel.Condition, window: Double) {
+        eyeMovement = art.eyeResponseModel?.firstMovement(condition, at: age, window: window,
+                                                          timeDraw: attentionDraw(), kindDraw: attentionDraw())
+    }
+    private func stepAttention(_ dt: Double, pointer: CGPoint?) {
+        disturbance *= exp(-dt / 4)
+        guard pose == .prone, attention != nil else { return }
+        if let point = pointer, pressurePoint == nil {
+            let head = facePoint
+            let distance = hypot(point.x - head.x, point.y - head.y) / unit
+            let entered = approach.observe(distance: distance, dt: dt)
+            if entered && !isAttending { considerAttention(to: point, touched: false) }
+            if isAttending && distance < 1.6 { gazeTarget = directionToPointer(point) }
+        }
+        attentionRemaining = max(0, attentionRemaining - dt)
+        if !isAttending { gazeTarget = .zero }
+        guard gaze != gazeTarget else { return }
+        let fraction = 1 - exp(-dt * (isAttending ? 14 : 9))
+        gaze.x += (gazeTarget.x - gaze.x) * fraction
+        gaze.y += (gazeTarget.y - gaze.y) * fraction
+        if hypot(gazeTarget.x - gaze.x, gazeTarget.y - gaze.y) < 0.012 { gaze = gazeTarget }
+    }
+    private func plannedInvitation(toward target: CGFloat, heading: CGFloat, from start: MotionFrame) -> InvitedWalk? {
+        let terrain = surface.terrain
+        let onDock = y > terrain.floor + 1
+        func limit(_ sign: CGFloat) -> CGFloat {
+            let edge = terrain.turnX(from: x, delta: sign * terrain.screen.width, radius: radius, onDock: onDock)
+            return (edge - x) / unit
+        }
+        let bounds = limit(-1)...limit(1)
+        let walking = MotionFrame(art.cel("walk", 0), heading > 0)
+        // Shifting weight to stand up or lie down also moves the body. Reserve
+        // every support change, including one that reverses before the last cel.
+        func travel(_ route: [MotionFrame]) -> (end: CGFloat, low: CGFloat, high: CGFloat) {
+            var end: CGFloat = 0, low: CGFloat = 0, high: CGFloat = 0
+            for (a, b) in zip(route, route.dropFirst()) {
+                end += motions.step(from: a, to: b)
+                low = min(low, end)
+                high = max(high, end)
+            }
+            return (end, low, high)
+        }
+        let rise = travel(motions.path(from: start, to: walking))
+        guard bounds.contains(rise.low), bounds.contains(rise.high) else { return nil }
+        let settle = travel(motions.path(from: walking, to: neutralFrame(for: .prone)))
+        let room = heading > 0 ? bounds.upperBound - rise.end - settle.high
+                               : rise.end + settle.low - bounds.lowerBound
+        let requested = heading * ((target - x) / unit - rise.end)
+        let gait = ApproachGait(cycle: art.gait, maximumDistance: min(room, requested), endingAt: 0)
+        let stop = rise.end + heading * gait.plannedDistance
+        guard !gait.isFinished, bounds.contains(stop + settle.low), bounds.contains(stop + settle.high) else { return nil }
+        let pace = art.gait.speed * clamp(0.72 + 0.16 * gait.plannedDistance, 0.72, 1.08)
+        return InvitedWalk(gait: gait, pace: pace, restRemaining: remainingPoseTime)
+    }
+    private func interruptInvitation() {
+        invitationGesture = InvitationGesture()
+        if let remaining = invitedWalk?.restRemaining ?? arrival?.invitation?.restRemaining {
+            change(to: .prone, for: remaining)
+        }
+    }
+    private func considerInvitation(_ dt: Double, pointer: CGPoint?, buttonDown: Bool) {
+        guard pose == .prone, let invitation, let point = pointer, !buttonDown, pressurePoint == nil,
+              surface.terrain.screen.contains(point) else {
+            invitationGesture = InvitationGesture()
+            return
+        }
+        let head = facePoint
+        let offset = CGPoint(x: (point.x - head.x) / unit, y: (point.y - head.y) / unit)
+        guard let cue = invitationGesture.observe(relative: offset, dt: dt),
+              invitation.accepts(cue, restDrive: art.behaviorModel?.restDrive(after: age) ?? 0.8,
+                                 disturbance: disturbance, familiarity: attention?.familiarEncounters ?? 0,
+                                 draw: attentionDraw()) else { return }
+        // Stop with the walking face short of the pointer. The front-facing rest
+        // and the two walking orientations have different head-to-anchor offsets.
+        let heading: CGFloat = cue.offset.x < 0 ? -1 : 1
+        let walkingCel = art.cel("walk", 0)
+        guard let layout = walkingCel.touchLayout else { return }
+        let walkingHead = walkingCel.projected(CGPoint(x: layout.head.x * walkingCel.sourceSize.width,
+                                                      y: layout.head.y * walkingCel.sourceSize.height))
+        let headReach = abs(walkingCel.anchorX - walkingHead.x) * walkingCel.scale
+        let goal = point.x - heading * (headReach + 0.10) * unit
+        let start = MotionFrame(frame())
+        guard let plan = plannedInvitation(toward: goal, heading: heading, from: start) else {
+            attentionRemaining = 0.8
+            gazeTarget = directionToPointer(point)
+            return
+        }
+        direction = heading
+        change(to: .walking, for: .infinity, from: start, invitation: plan)
+    }
+    private func advanceInvitedWalk(_ dt: Double, walk: InvitedWalk) {
+        var next = walk
+        let delta = next.gait.advance(dt, speed: next.pace) * unit * direction
+        let terrain = surface.terrain
+        let safe = terrain.turnX(from: x, delta: delta, radius: radius, onDock: y > terrain.floor + 1)
+        guard abs(safe - (x + delta)) < 0.001 else {
+            interruptInvitation()
+            return
+        }
+        x = safe
+        invitedWalk = next
+        if next.gait.isFinished { change(to: .prone, for: next.restRemaining) }
+    }
+    func step(_ dt:Double, pointer: CGPoint? = nil, pointerButtonDown: Bool = false) {
+        socialBlinkCooldown = max(0, socialBlinkCooldown - dt)
+        stepAttention(dt, pointer: pointer)
+        considerInvitation(dt, pointer: pointer, buttonDown: pointerButtonDown)
         if let elapsed=heartAge {heartAge=elapsed+dt < 0.78 ? elapsed+dt:nil}
         if let elapsed=blinkAge {blinkAge=elapsed+dt < 0.54 ? elapsed+dt:nil}
         if let response=petting.advance(dt), let down=pressurePoint, isGrounded {respond(response,at:down)}
@@ -386,10 +641,15 @@ final class PetController {
         }
         switch pose {
         case .prone:
+            if let movement = eyeMovement, age >= movement.onset + movement.duration { eyeMovement = nil }
             if age >= nextBlink + 0.27 { nextBlink = age + .random(in: 4...15) }
-            if age >= nextGroom, age < duration, pressurePoint == nil { groomNow() }
+            if age >= nextGroom, age < duration, pressurePoint == nil, !isAttending, eyeMovement == nil { groomNow(showcase: false) }
         case .carried: followHand()
         case .walking:
+            if let walk = invitedWalk {
+                advanceInvitedWalk(dt, walk: walk)
+                break
+            }
             let previous=art.gait.sample(time:previousAge,speed:walkRate,startingAt:walkStart)
             let current=art.gait.sample(time:age,speed:walkRate,startingAt:walkStart)
             let d=(current.distance-previous.distance)*unit
@@ -434,7 +694,10 @@ final class PetController {
         case .sleepBack: (key,i)=("turn",5);flip=false
         case .backLook: (key,i)=("back",2);flip=false
         case .look: (key,i)=(restShape == .side ? "side":"loaf",age<0.15 ? 1:0);flip=false
-        case .walking:(key,i)=("walk",art.gait.sample(time:age,speed:walkRate,startingAt:walkStart).index);flip=direction>0
+        case .walking:
+            key="walk"
+            i=invitedWalk?.gait.frameIndex ?? art.gait.sample(time:age,speed:walkRate,startingAt:walkStart).index
+            flip=direction>0
         case .hop:
             return (journey!.frame(age/duration),direction>0)
         case .fall:
@@ -463,7 +726,7 @@ final class PetController {
         let lean=heartAge.map {1-0.024*pow(sin(.pi*min(1,$0/0.58)),2)} ?? 1
         let draw=SpriteDrawing(cel:cel,grounded:grounded,mirror:flip,feet:CGPoint(x:x,y:y),
                                k:k,stretch:lean,backing:screen.backingScaleFactor,
-                               headroom:heartAge == nil ? 0:clamp(unit*0.105,8,31)*2.65,screenFloor:surface.terrain.floor,sleepPhase:sleeping)
+                               headroom:heartAge == nil ? 0:clamp(unit*0.105,8,31)*2.65,screenFloor:surface.terrain.floor,sleepPhase:sleeping,gaze:gaze)
         let rect=draw.frame
         let origin=CGPoint(x:heartOrigin.x-rect.minX,y:heartOrigin.y-rect.minY)
         let heart=heartAge.flatMap { draw.heart(progress:$0/0.78,unit:unit,origin:origin) }
@@ -474,8 +737,8 @@ final class PetController {
             guard cel.eyeCenters != nil, art.eyelids.count==2 else {return nil}
             return elapsed<0.07 || elapsed>0.44 ? 0:1
         }
-        ?? spontaneousLid
-        let redraw=view.drawing?.sleepPhase != sleeping || heart != view.heart || lid != shownLid || view.drawing?.cel !== cel || view.drawing?.transform != draw.transform ||
+        ?? eyeMovement?.lid(at: age) ?? spontaneousLid
+        let redraw=view.drawing?.gaze != draw.gaze || view.drawing?.sleepPhase != sleeping || heart != view.heart || lid != shownLid || view.drawing?.cel !== cel || view.drawing?.transform != draw.transform ||
                    view.drawing?.grounded != grounded || rect.size != panel.frame.size
         view.heart=heart;view.eyelids=lid.map {art.eyelids[$0]};shownLid=lid
         view.drawing=draw
